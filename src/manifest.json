@@ -1,0 +1,26 @@
+{
+	"manifest_version": 2,
+	"name": "iet-ng-tests",
+	"xpi-name": "iet-ng-tests",
+	"description": "Demonstrates new Thunderbird v68 Preferences System Changes",
+	"version": "0.1.0",
+	"author": "cleidigh",
+	"developer": {
+		"name": "Christopher Leidigh, Storm"
+	},
+	"applications": {
+		"gecko": {
+			"id": "iet-ng-tests@cleidigh.kokkini.net"
+		}
+	},
+	"icons": {
+		"64": "skin/preferences1-64px.png"
+	},
+	"legacy": {
+		"options": {
+			"page": "chrome://iet-ng-tests/content/options.xul",
+			"open_in_tab": false
+		}
+	}
+
+}

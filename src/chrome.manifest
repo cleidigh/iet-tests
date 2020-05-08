@@ -1,0 +1,6 @@
+content	iet-ng-tests	content/
+overlay	chrome://messenger/content/messenger.xul	chrome://iet-ng-tests/content/ietngfolderpane.xul
+locale	iet-ng-tests	en-US	locale/en-US/
+skin	iet-ng-tests	default		chrome/skin/
+skin	iet-ng-tests	classic/1.0	skin/
+

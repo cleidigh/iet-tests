@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE overlay [
+
+<!ENTITY % baseMenuOverlayDTD SYSTEM "chrome://messenger/locale/baseMenuOverlay.dtd">
+%baseMenuOverlayDTD;
+]>
+
+<overlay id="mboximportOverlay"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+	<script type="application/javascript" src="chrome://iet-ng-tests/content/utils.js" />
+	<script type="application/javascript" src="chrome://iet-ng-tests/content/iet-test1.js" />
+
+	<popup id="folderPaneContext">
+		<menu label="IETng Tests" id="IETmenu">
+			<menupopup id="mbxpopup" >
+				<menuitem id="mboxexport" label="Folder Creation T1" oncommand="createFoldersT1();" />
+				<menuseparator />
+				<menuitem id="openIEToptions" label="createFolderStructureT2" oncommand="createFolderStructureT2()" />
+			</menupopup>
+		</menu>
+	</popup>
+</overlay>
