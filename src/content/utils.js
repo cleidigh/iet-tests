@@ -29,6 +29,7 @@ function loadPreferences() {
 	console.debug(w.Preferences);
 }
 
+
 function openIETtestoptions() {
 	window.openDialog("chrome://iet-ng-tests/content/options.xul", "", "chrome,modal,centerscreen");
 }
