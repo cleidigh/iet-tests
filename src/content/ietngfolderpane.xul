@@ -11,11 +11,12 @@
 	<script type="application/javascript" src="chrome://iet-ng-tests/content/iet-test1.js" />
 
 	<popup id="folderPaneContext">
-		<menu label="IETng Tests" id="IETmenu">
-			<menupopup id="mbxpopup" >
-				<menuitem id="mboxexport" label="Folder Creation T1" oncommand="createFoldersT1();" />
+		<menu label="IETng Tests" id="IETng_testmenu">
+			<menupopup id="ietng-tests-menu" >
+				<menuitem id="fc_t1" label="Folder Creation T1" oncommand="createFoldersT1();" />
 				<menuseparator />
-				<menuitem id="openIEToptions" label="createFolderStructureT2" oncommand="createFolderStructureT2()" />
+				<menuitem id="cfs_t2" label="createFolderStructureT2" oncommand="createFolderStructureT2()" />
+				<menuitem id="openIETtestoptions" label="Test Options" oncommand="openIETtestoptions()" />
 			</menupopup>
 		</menu>
 	</popup>

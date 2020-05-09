@@ -26,11 +26,11 @@ function createFoldersT1() {
 	test_mcount = Preferences.get("extensions.iet-ng-tests.test_mcount").value;
 	test_msize = Preferences.get("extensions.iet-ng-tests.test_msize").value;
 	var test_updateCycle = Preferences.get("extensions.iet-ng-tests.test_updatecycle").value;
+	var test_updateCount = Preferences.get("extensions.iet-ng-tests.test_updatecount").value;
 	var test_pawaitCycle = Preferences.get("extensions.iet-ng-tests.test_pawaitcycle").value;
-	// test_ = Preferences.get("extensions.iet-ng-tests.test_");
-	// test_ = Preferences.get("extensions.iet-ng-tests.test_");
+	var test_usecfawait = Preferences.get("extensions.iet-ng-tests.test_usecfawait").value;
 
-	let folderArray = createFolders(msgFolder, test_cycles, test_fcount, test_mcount, test_msize, test_updateCycle, test_pawaitCycle);
+	let folderArray = createFolders(msgFolder, test_cycles, test_fcount, test_mcount, test_msize, test_updateCycle, test_pawaitCycle, test_updateCount, test_usecfawait);
 
 }
 
@@ -54,58 +54,6 @@ async function createFolderStructureT2() {
 		await resetSelectedFolder(msgFolder);
 	
 	}
-}
-
-function createFolderStructure2(osFolder, rootOSFolder, msgFolder, dirs) {
-	let startTime = new Date();
-	var curParentFolder = null;
-	var curFolder = "";
-	var msgfolderArray = [];
-
-	console.debug(rootOSFolder);
-	var folderArray = dirs.map(d => {
-		let da = d.split(rootOSFolder)[1];
-		console.debug(da);
-		return da;
-	});
-	console.debug(folderArray);
-
-	for (let index = 0; index < folderArray.length; index++) {
-		if (index % 400 === 0) {
-			msgFolder.ForceDBClosed();
-			console.debug('update');
-		}
-		let fsplit = folderArray[index].split('\\');
-		console.debug('split ');
-		fsplit.shift();
-
-		console.debug(fsplit);
-		if (fsplit.length === 1) {
-			curParentFolder = msgFolder;
-			curFolder = folderArray[index].slice(1);
-			curParentFolder.createSubfolder(curFolder, msgWindow);
-			console.debug('created: ' + curFolder);
-			msgfolderArray[index] = curParentFolder.getChildNamed(curFolder);
-		} else {
-			console.debug(fsplit.slice(0, fsplit.length - 1));
-			console.debug(fsplit.slice(0, fsplit.length - 1).join('\\'));
-
-
-			let pi = folderArray.indexOf('\\' + fsplit.slice(0, fsplit.length - 1).join("\\"));
-			console.debug('Parent ' + pi + '  ' + folderArray[pi] + '  ' + fsplit[fsplit.length - 1]);
-			curParentFolder = msgfolderArray[pi];
-			curFolder = fsplit[fsplit.length - 1];
-			curParentFolder.createSubfolder(curFolder, msgWindow);
-			console.debug('created subfolder: ' + curFolder);
-			msgfolderArray[index] = curParentFolder.getChildNamed(curFolder);
-		}
-		// curParentFolder.createSubfolder(curFolder, msgWindow);
-		console.debug(curFolder);
-	}
-	let stepTime = new Date();
-	console.debug('CreateFolders ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec');
-
-
 }
 
 function createFolderStructure(osFolder, rootOSFolder, msgFolder, dirs) {
@@ -146,10 +94,9 @@ function createFolderStructure(osFolder, rootOSFolder, msgFolder, dirs) {
 
 }
 
-
 // 100 folders, 100msg, 10k size - 58s
 
-async function createFolders(parent, cycles, fcount, mcount, msize, updateCycle, pawaitCycle) {
+async function createFolders(parent, cycles, fcount, mcount, msize, updateCycle, pawaitCycle, test_updateCount, test_usecfawait) {
 	let count2 = cycles;
 	var count = fcount;
 
@@ -162,23 +109,14 @@ async function createFolders(parent, cycles, fcount, mcount, msize, updateCycle,
 	// msize : size in bytes
 	//  var msize = 10000;
 
-	/* 
-	for (let index = 0; index < msize / 100; index++) {
-		msg1 += msg100ch;
-	}
-	msg1 += "\n\n";
- */
-
 	console.debug('CreateFolders Test1 - Start Cycles: ' + count2 + ' Folders: ' + count + ' MsgPerFolder: ' + mcount + ' MsgSize: ' + msize);
 
 
 	let afileBase = "-subfolder";
 	let folderName = "";
 
-	// var sleepTime = Preferences.get("extensions.iet-ng-tests.test_msize").value;
-
 	for (let i2 = 1; i2 < count2 + 1; i2++) {
-		var fDBClosedCount = Preferences.get("extensions.iet-ng-tests.test_msize").value;
+		var fDBClosedCount = test_updateCount;
 
 		let startTime = new Date();
 		console.debug('Time: ' + startTime.toISOString());
@@ -188,9 +126,13 @@ async function createFolders(parent, cycles, fcount, mcount, msize, updateCycle,
 			const folderPromises = [];
 			for (i = 1; i < count + 1; i++) {
 				folderName = `${i}${afileBase}`;
-				// folderPromises.push(promiseFolderAdded(folderName));
+
+				if (test_usecfawait) {
+					folderPromises.push(promiseFolderAdded(folderName));
+				}
 				parent.createSubfolder(folderName, msgWindow);
-				if (i % pawaitCycle === 0 && pawaitCycle || (i % updateCycle === 0 && updateCycle)) {
+
+				if (test_usecfawait && ( i % pawaitCycle === 0 && pawaitCycle || (i % updateCycle === 0 && updateCycle))) {
 					await Promise.all(folderPromises);
 					console.debug('Created Folder/await : ' + i2 + ' :  ' + i);
 				}
@@ -198,74 +140,22 @@ async function createFolders(parent, cycles, fcount, mcount, msize, updateCycle,
 				if (i % updateCycle === 0 && updateCycle && fDBClosedCount) {
 					parent.ForceDBClosed();
 					fDBClosedCount--;
-					// await sleepA(sleepTime);
-					console.debug('Update : ' + i + ' : ' + folderName);
+					console.debug('ForceDBClosed : ' + i + ' : ' + folderName);
 				}
-
-
-				// if (i % 1 === 0 && mcount > 0) {
-				// 	// if (i % 1 === 0) {
-				// 	// if (i % 4000 == 0 && i !== 0) {
-				// 	// console.debug('adding message ' + parent.name);
-				// 	await sleepA(5);
-				// 	var tempfolder = parent.getChildNamed(folderName);
-				// 	tempfolder = tempfolder.QueryInterface(Ci.nsIMsgFolder);
-
-				// 	// parent.updateFolder(msgWindow);
-				// 	addMessages(tempfolder, mcount, msize);
-				// 	mCountTotal += mcount;
-				// 	IETwritestatus('Cycle: ' + i2 + '  Folder: ' + folderName + ' : ' + mCountTotal)
-				// 	// parent.updateFolder(msgWindow);
-				// 	// console.debug('waiting over');
-				// }
-
-				let stepTime2 = new Date();
-				// IETwritestatus('Folder Cycle: ' + i2 + '  Folder: ' + folderName + '  Time ' + stepTime2);
 			}
 		} catch (e) {
-			console.debug(e + " : count = " + i);
-			alert(e + " : count = " + i);
+			console.debug(e + " : Folder count = " + i);
+			alert(e + " : Folder count = " + i);
 			return;
 		}
 
 		let stepTime = new Date();
 		console.debug('CreateFolders ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec');
 		IETwritestatus('Folder Cycle: ' + i2 + '  Folder: ' + folderName + '  Time ' + (stepTime - startTime) / 1000 + ' sec');
-		// console.debug('wait clear subfolders');
 		await sleepA(500);
 
 		await resetSelectedFolder(parent);
 		console.debug('AfterReset');
-		continue;
-
-		let MSG_FOLDER_FLAG_DIRECTORY = 0x0008;
-		let top = parent.parent;
-		let parentFolderName = parent.name;
-
-		let targets = Cc["@mozilla.org/array;1"].createInstance(Ci.nsIMutableArray);
-
-		targets.appendElement(parent, false);
-
-		top.deleteSubFolders(targets, null);
-
-		top.ForceDBClosed();
-		// top.updateFolder(msgWindow);
-
-		let endTime = new Date();
-		console.debug('Cycle: ' + i2 + ' Time End: ' + (endTime - startTime) / 1000);
-		console.debug('TotalMessages: ' + mCountTotal);
-		await sleepA(500);
-
-		let folderPromises = [];
-		folderPromises.push(promiseFolderAdded(parentFolderName));
-		top.createSubfolder(parentFolderName, msgWindow);
-		await Promise.all(folderPromises);
-
-		var tempfolder2 = top.getChildNamed(parentFolderName);
-		tempfolder2 = tempfolder2.QueryInterface(Ci.nsIMsgFolder);
-		parent = tempfolder2;
-		console.debug(parent.name);
-		await sleepA(1500);
 
 	}
 
@@ -274,7 +164,6 @@ async function createFolders(parent, cycles, fcount, mcount, msize, updateCycle,
 
 
 async function resetSelectedFolder(folder) {
-	// console.debug('wait clear subfolders');
 
 	let MSG_FOLDER_FLAG_DIRECTORY = 0x0008;
 	let top = folder.parent;
@@ -328,7 +217,6 @@ function promiseFolderAdded(folderName) {
 		var listener = {
 			folderAdded: aFolder => {
 				if (aFolder.name == folderName) {
-					// console.debug('completed : ' + folderName);
 					MailServices.mfn.removeListener(listener);
 					resolve(aFolder);
 				}
@@ -337,23 +225,6 @@ function promiseFolderAdded(folderName) {
 		MailServices.mfn.addListener(
 			listener,
 			Ci.nsIMsgFolderNotificationService.folderAdded
-		);
-	});
-};
-
-function promiseFolderMsgAdded(folderName) {
-	return new Promise((resolve, reject) => {
-		var listener = {
-			msgAdded: aMsg => {
-				console.debug('Message completed : ');
-				MailServices.mfn.removeListener(listener);
-				resolve(aMsg);
-			},
-		};
-
-		MailServices.mfn.addListener(
-			listener,
-			Ci.nsIMsgFolderNotificationService.msgAdded
 		);
 	});
 }

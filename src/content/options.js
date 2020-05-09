@@ -81,6 +81,7 @@ function onLoad(e) {
 		{ id: "extensions.iet-ng-tests.test_mcount", type: "int" },
 		{ id: "extensions.iet-ng-tests.test_msize", type: "int" },
 		{ id: "extensions.iet-ng-tests.test_updatecycle", type: "int" },
+		{ id: "extensions.iet-ng-tests.test_updatecount", type: "int" },
 		{ id: "extensions.iet-ng-tests.test_pawaitcycle", type: "int" },
 		{ id: "extensions.iet-ng-tests.test_usecfawait", type: "bool" },
 		// { id: "extensions.iet-ng-tests.test_", type: "bool" },

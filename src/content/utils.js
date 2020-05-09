@@ -1,32 +1,37 @@
 // folder tests utilities
 
-	// if (!context) {
+// if (!context) {
 var context = {};
 
 function loadPreferences() {
-		console.debug('LoadPreferences');
-		Services.scriptloader.loadSubScript("chrome://global/content/preferencesBindings.js", context, "UTF-8" /* The script's encoding */);
-			
-		Preferences.addAll([
-	
-			{ id: "extensions.iet-ng-tests.test_cycles", type: "int" },
-			{ id: "extensions.iet-ng-tests.test_fcount", type: "int" },
-			{ id: "extensions.iet-ng-tests.test_mcount", type: "int" },
-	
-			{ id: "extensions.iet-ng-tests.test_msize", type: "int" },
-			{ id: "extensions.iet-ng-tests.test_updatecycle", type: "int" },
-			{ id: "extensions.iet-ng-tests.test_pawaitcycle", type: "int" },
-			{ id: "extensions.iet-ng-tests.test_usecfawait", type: "bool" },
-			// { id: "extensions.iet-ng-tests.test_", type: "bool" },
-			// { id: "extensions.iet-ng-tests.test_", type: "bool" },
-	
-		]);
-		
-		var w = getMail3Pane();
+	console.debug('LoadPreferences');
+	Services.scriptloader.loadSubScript("chrome://global/content/preferencesBindings.js", context, "UTF-8" /* The script's encoding */);
 
-		w.Preferences = Preferences;
-		console.debug(w.Preferences);
-	}	
+	Preferences.addAll([
+
+		{ id: "extensions.iet-ng-tests.test_cycles", type: "int" },
+		{ id: "extensions.iet-ng-tests.test_fcount", type: "int" },
+		{ id: "extensions.iet-ng-tests.test_mcount", type: "int" },
+
+		{ id: "extensions.iet-ng-tests.test_msize", type: "int" },
+		{ id: "extensions.iet-ng-tests.test_updatecycle", type: "int" },
+		{ id: "extensions.iet-ng-tests.test_updatecount", type: "int" },
+		{ id: "extensions.iet-ng-tests.test_pawaitcycle", type: "int" },
+		{ id: "extensions.iet-ng-tests.test_usecfawait", type: "bool" },
+		// { id: "extensions.iet-ng-tests.test_", type: "bool" },
+		// { id: "extensions.iet-ng-tests.test_", type: "bool" },
+
+	]);
+
+	var w = getMail3Pane();
+
+	w.Preferences = Preferences;
+	console.debug(w.Preferences);
+}
+
+function openIETtestoptions() {
+	window.openDialog("chrome://iet-ng-tests/content/options.xul", "", "chrome,modal,centerscreen");
+}
 
 
 function IETwritestatus(text) {
@@ -61,7 +66,7 @@ function promptImportDirectory() {
 
 	IETwritestatus("Import Directory: " + fp.file.path);
 	var d = fp.file.directoryEntries;
-	
+
 	return fp;
 }
 

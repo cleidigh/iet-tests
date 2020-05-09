@@ -54,6 +54,10 @@
         <textbox id="test_msize" preference="extensions.iet-ng-tests.test_msize" />
         </hbox>
         <hbox>
+      <label width="120px" control="test_updatecount">updateCount</label>
+        <textbox id="test_updatecount" preference="extensions.iet-ng-tests.test_updatecount" />
+        </hbox>
+       <hbox>
       <label width="120px" control="test_updatecycle">updateCycle</label>
         <textbox id="test_updatecycle" preference="extensions.iet-ng-tests.test_updatecycle" />
         </hbox>
