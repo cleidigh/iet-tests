@@ -16,6 +16,9 @@
 				<menuitem id="fc_t1" label="Folder Creation T1" oncommand="createFoldersT1();" />
 				<menuseparator />
 				<menuitem id="cfs_t2" label="createFolderStructureT2" oncommand="createFolderStructureT2()" />
+				
+				<menuitem id="ieml_t3" label="ImportEMLStructuredExt" oncommand="ImportEMLStructuredExt()" />
+
 				<menuitem id="openIETtestoptions" label="Test Options" oncommand="openIETtestoptions()" />
 			</menupopup>
 		</menu>
