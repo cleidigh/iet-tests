@@ -3,7 +3,7 @@
 	"name": "iet-ng-tests",
 	"xpi-name": "iet-ng-tests",
 	"description": "Demonstrates new Thunderbird v68 Preferences System Changes",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"author": "cleidigh",
 	"developer": {
 		"name": "Christopher Leidigh, Storm"

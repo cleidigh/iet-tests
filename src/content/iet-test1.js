@@ -89,7 +89,9 @@ async function ImportEMLStructuredExt() {
 	
 	await importOSFolderMessages(msgFolder, msgfolderArray, dirs);
 	let stepTime = new Date();
+	console.debug('Total Messages Imported: ' + msgCount);
 	console.debug('Import ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec');
+	IETwritestatus('Total Messages Imported: ' + msgCount + '  -  ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec')
 
 
 }
@@ -374,25 +376,27 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 					if (test_usecfawait) {
 						msgFolder.parent.updateFolder(msgWindow);
 					}
-					console.debug('update');
+					console.debug('DB update');
 				}
 		
 				// console.debug(entry.name);
-				console.debug(msgCount + '  : ' + entry.path);
-				if (fileArray === "") {
+				// console.debug(msgCount + '  : ' + entry.path);
+				// if (fileArray === "") {
 					fileArray = await readFile1(entry.path);
-					
-				}
+				// }
+
 				fileArray = fixFile(fileArray, msgFolder);
 				// console.debug(fileArray);
 				try {
 					msgFolder.addMessage(fileArray);
-					
+					if (msgCount % 10 === 0) {
+						IETwritestatus('Messages Imported: ' + msgCount);
+					}
 				} catch (e) {
 					console.debug(msgCount + '  AdMessageError ' + e);
 					console.debug(entry.path);
 				}
-				messageEntries.push(entry);
+				// messageEntries.push(entry);
 			} else {
 				// console.debug('folder entry  ' + entry.name);
 			}
