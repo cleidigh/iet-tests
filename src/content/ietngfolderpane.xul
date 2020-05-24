@@ -18,7 +18,7 @@
 				<menuitem id="cfs_t2" label="createFolderStructureT2" oncommand="createFolderStructureT2()" />
 				
 				<menuitem id="ieml_t3" label="ImportEMLStructuredExt" oncommand="ImportEMLStructuredExt()" />
-
+				<!-- <menuitem id="ieml_t3" label="ImportEMLStructuredExt"  /> -->
 				<menuitem id="openIETtestoptions" label="Test Options" oncommand="openIETtestoptions()" />
 			</menupopup>
 		</menu>

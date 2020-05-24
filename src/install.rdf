@@ -4,7 +4,7 @@
     <em:id>iet-ng-tests</em:id>
     <em:name>iet-ng-tests</em:name>
     <em:type>2</em:type>
-    <em:version>0.1.1</em:version>
+    <em:version>0.1.3</em:version>
     <em:creator>Christopher Leidigh</em:creator>
     <em:description>Demonstrates new Preferences System Changes</em:description>
     <em:homepageURL>https://github.com/cleidigh/Thunderstorm.git</em:homepageURL>

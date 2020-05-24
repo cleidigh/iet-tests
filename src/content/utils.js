@@ -27,18 +27,23 @@ function loadPreferences() {
 
 	w.Preferences = Preferences;
 	console.debug(w.Preferences);
+	// document.getElementById("ieml_t3").addEventListener("click", function (e) { ImportEMLStructuredExt(e); }, false);
+	// document.getElementById("ieml_t3").addEventListener("click", function (e) { t1(e); }, false);
 }
 
+function t1(e) {
+	console.debug('T1');
+}
 
 function openIETtestoptions() {
 	window.openDialog("chrome://iet-ng-tests/content/options.xul", "", "chrome,modal,centerscreen");
 }
 
 
-function IETwritestatus(text) {
+function IETwritestatus(text, delay = 5000) {
 	if (document.getElementById("statusText")) {
 		document.getElementById("statusText").setAttribute("label", text);
-		var delay = 5000;
+		// var delay = 5000;
 		if (delay > 0)
 			window.setTimeout(function () { IETdeletestatus(text); }, delay);
 	}

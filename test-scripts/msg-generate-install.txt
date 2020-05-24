@@ -1,0 +1,14 @@
+// EML Message Generator - cleidigh
+Requires NodeJS
+
+Install required libraries:
+
+npm install -g minimist
+npm install -g fs-extra
+npm install -g uuid
+
+For help:
+node msg-generate -h
+
+Options:
+node msg-generate [-p outpath, -c msgcount, --mink minsizek, --maxk maxsizek, -h]

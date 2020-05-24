@@ -70,15 +70,15 @@ async function ImportEMLStructuredExt() {
 
 	let startTime = new Date();
 
-	var dirs = await dirWalk2(osFolder.file.path);
-	// console.debug('AfterWalk');
-	// for (let index = 0; index < dirs.length; index++) {
-	// 	const element = dirs[index];
-	// 	console.debug(element.path.length + ' : ' + element.path);
-	// }
+	var dirs = await getImportFolderStructure(osFolder.file.path);
+	console.debug('OS Folders:');
+	for (let index = 0; index < dirs.length; index++) {
+		const element = dirs[index];
+		console.debug(element.path.length + ' : ' + element.path);
+	}
 	// return;
 	var test_cycles = Preferences.get("extensions.iet-ng-tests.test_cycles").value;
-	console.debug(test_cycles);
+	// console.debug(test_cycles);
 
 	createFolderStructure(osFolder, osFolder.file.path, msgFolder, dirs);
 
@@ -91,7 +91,7 @@ async function ImportEMLStructuredExt() {
 	let stepTime = new Date();
 	console.debug('Total Messages Imported: ' + msgCount);
 	console.debug('Import ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec');
-	IETwritestatus('Total Messages Imported: ' + msgCount + '  -  ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec')
+	IETwritestatus('Total Messages Imported: ' + msgCount + '  -  ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec', 0);
 
 
 }
@@ -103,11 +103,26 @@ function createFolderStructure(osFolder, rootOSFolder, msgFolder, dirs) {
 
 	// console.debug(rootOSFolder);
 	folderArray = dirs.map(d => {
-		let da = d.path.split(rootOSFolder + '\\')[1];
+		let da;
+		if (navigator.platform.toLowerCase().indexOf("win") > -1) {
+			da = d.path.split(rootOSFolder + '\\')[1];
+			if (!da) {
+				da = rootOSFolder;
+			}
+		} else {
+			da = d.path.split(rootOSFolder + '/')[1];
+		}
 		return da;
 	});
+	console.debug('Folder Array');
+	folderArray.map(d => {
+		console.debug(d);
+	});
 
-	for (let index = 0; index < folderArray.length; index++) {
+	// folderArray.unshift(rootOSFolder);
+	msgfolderArray[0] = msgFolder;
+
+	for (let index = 1; index < folderArray.length; index++) {
 		if (index % 400 === 0) {
 			msgFolder.ForceDBClosed();
 			console.debug('update');
@@ -120,7 +135,7 @@ function createFolderStructure(osFolder, rootOSFolder, msgFolder, dirs) {
 			if (OSDirPath === '.') {
 				curParentFolder = msgFolder;
 				curParentFolder.createSubfolder(newFolderName, msgWindow);
-				// console.debug('created: '+ newFolderName);
+				// console.debug('created: '+ newFo.lderName);
 				msgfolderArray[index] = curParentFolder.getChildNamed(newFolderName);
 			} else {
 				curParentFolder = msgfolderArray[folderArray.indexOf(OSDirPath)];
@@ -141,10 +156,12 @@ function createFolderStructure(osFolder, rootOSFolder, msgFolder, dirs) {
 }
 
 async function importOSFolderMessages(msgFolder, msgfolderArray, OSFolderArray) {
+	// console.debug('ImportantMessages');
+	await messageFolderImport(msgFolder, msgfolderArray[0], folderArray[0]);
 
-	for (let index = 0; index < OSFolderArray.length; index++) {
+	for (let index = 1; index < OSFolderArray.length; index++) {
 		const folder = OSFolderArray[index].path;
-
+		// console.debug('ImportFolder ' + folder);
 		await messageFolderImport(msgFolder, msgfolderArray[index], folder);
 	}
 }
@@ -315,7 +332,7 @@ function dirWalk(dir) {
 
 async function dirWalk2(dirPath) {
 	var iterator = new OS.File.DirectoryIterator(dirPath);
-	var subdirs = [];
+	var subdirs = [{path: dirPath}];
 
 	// Iterate through the directory
 	let p = iterator.forEach(
@@ -353,6 +370,54 @@ async function dirWalk2(dirPath) {
 
 }
 
+async function getImportFolderStructure(rootDirPath) {
+	let baseDirs = await importOSDirIteration(rootDirPath);
+	baseDirs.unshift({path: rootDirPath});
+	return baseDirs;
+}
+
+async function importOSDirIteration(rootDirPath) {
+	var iterator = new OS.File.DirectoryIterator(rootDirPath);
+	var subdirs = [];
+
+	// console.debug('importIteration ' + rootDirPath);
+	// Iterate through the directory
+	let p = iterator.forEach(
+		function onEntry(entry) {
+			if (entry.isDir) {
+				// console.debug(entry.name);
+				// console.debug(entry.path);
+				subdirs.push(entry);
+				// subdirs.push(entry.path);
+			} else {
+				// console.debug('file  ' + entry.name);
+			}
+		}
+	);
+
+	return p.then(
+		async function onSuccess() {
+			iterator.close();
+			// console.debug('dirs: ' + subdirs.map(d => d.path + ' '));
+
+			for (const dir of subdirs) {
+				// console.debug('subWalk '+ dir.name);
+				let dirs = await importOSDirIteration(dir.path);
+				subdirs = subdirs.concat(dirs);
+				// console.debug('accumulated dirs: ' + subdirs.map(d => d.name + ' '));
+			}
+
+			// subdirs.unshift({path: rootDirPath});
+			return subdirs;
+		},
+		function onFailure(reason) {
+			iterator.close();
+			throw reason;
+		}
+	);
+
+}
+
 
 async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 	var iterator = new OS.File.DirectoryIterator(dirPath);
@@ -362,7 +427,6 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 	var test_updateCount = Preferences.get("extensions.iet-ng-tests.test_updatecount").value;
 	var test_pawaitCycle = Preferences.get("extensions.iet-ng-tests.test_pawaitcycle").value;
 	var test_usecfawait = Preferences.get("extensions.iet-ng-tests.test_usecfawait").value;
-
 
 	msgFolder = msgFolder.QueryInterface(Ci.nsIMsgLocalMailFolder);
 	
@@ -376,16 +440,17 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 					if (test_usecfawait) {
 						msgFolder.parent.updateFolder(msgWindow);
 					}
-					console.debug('DB update');
+					// console.debug('DB update');
 				}
 		
 				// console.debug(entry.name);
 				// console.debug(msgCount + '  : ' + entry.path);
-				// if (fileArray === "") {
+				if (entry.name.endsWith() === ".eml") {
 					fileArray = await readFile1(entry.path);
-				// }
-
-				fileArray = fixFile(fileArray, msgFolder);
+					fileArray = fixFile(fileArray, msgFolder);
+				} else {
+					console.debug('Skip Non-EML File: ' + entry.path + ' - ' + entry.name);
+				}
 				// console.debug(fileArray);
 				try {
 					msgFolder.addMessage(fileArray);
