@@ -86,7 +86,7 @@ async function ImportEMLStructuredExt() {
 	// 	const element = folderArray[index];
 	// 	console.debug(element);
 	// }
-	
+
 	await importOSFolderMessages(msgFolder, msgfolderArray, dirs);
 	let stepTime = new Date();
 	console.debug('Total Messages Imported: ' + msgCount);
@@ -143,12 +143,12 @@ function createFolderStructure(osFolder, rootOSFolder, msgFolder, dirs) {
 				// console.debug('created subfolder: '+ newFolderName);
 				msgfolderArray[index] = curParentFolder.getChildNamed(newFolderName);
 			}
-				
+
 		} catch (error) {
-			console.debug('Error '+ error);
+			console.debug('Error ' + error);
 			console.debug(newFolderName);
 		}
-		
+
 	}
 	let stepTime = new Date();
 	console.debug('CreateFolders ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec');
@@ -159,10 +159,19 @@ async function importOSFolderMessages(msgFolder, msgfolderArray, OSFolderArray) 
 	// console.debug('ImportantMessages');
 	await messageFolderImport(msgFolder, msgfolderArray[0], folderArray[0]);
 
+	msgFolder.ForceDBClosed();
+	msgFolder.updateFolder(msgWindow);
+
 	for (let index = 1; index < OSFolderArray.length; index++) {
 		const folder = OSFolderArray[index].path;
 		// console.debug('ImportFolder ' + folder);
 		await messageFolderImport(msgFolder, msgfolderArray[index], folder);
+
+		msgFolder.ForceDBClosed();
+		msgfolderArray[index].updateFolder(msgWindow);
+		// msgfolderArray[index].parent.updateFolder(msgWindow);
+
+
 	}
 }
 
@@ -204,7 +213,7 @@ async function createFolders(parent, cycles, fcount, mcount, msize, updateCycle,
 				}
 				parent.createSubfolder(folderName, msgWindow);
 
-				if (test_usecfawait && ( i % pawaitCycle === 0 && pawaitCycle || (i % updateCycle === 0 && updateCycle))) {
+				if (test_usecfawait && (i % pawaitCycle === 0 && pawaitCycle || (i % updateCycle === 0 && updateCycle))) {
 					await Promise.all(folderPromises);
 					console.debug('Created Folder/await : ' + i2 + ' :  ' + i);
 				}
@@ -244,7 +253,7 @@ async function resetSelectedFolder(folder) {
 
 	console.debug('DeleteFolder ' + top.name + '  ' + parentFolderName);
 	IETwritestatus('Resetting Folder: ' + parentFolderName);
-	
+
 	let targets = Cc["@mozilla.org/array;1"].createInstance(Ci.nsIMutableArray);
 
 	targets.appendElement(parent, false);
@@ -332,7 +341,7 @@ function dirWalk(dir) {
 
 async function dirWalk2(dirPath) {
 	var iterator = new OS.File.DirectoryIterator(dirPath);
-	var subdirs = [{path: dirPath}];
+	var subdirs = [{ path: dirPath }];
 
 	// Iterate through the directory
 	let p = iterator.forEach(
@@ -372,7 +381,7 @@ async function dirWalk2(dirPath) {
 
 async function getImportFolderStructure(rootDirPath) {
 	let baseDirs = await importOSDirIteration(rootDirPath);
-	baseDirs.unshift({path: rootDirPath});
+	baseDirs.unshift({ path: rootDirPath });
 	return baseDirs;
 }
 
@@ -429,7 +438,7 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 	var test_usecfawait = Preferences.get("extensions.iet-ng-tests.test_usecfawait").value;
 
 	msgFolder = msgFolder.QueryInterface(Ci.nsIMsgLocalMailFolder);
-	
+
 	// console.debug('Folder ' + msgFolder.name);
 	// Iterate through the directory
 	let p = iterator.forEach(
@@ -442,26 +451,27 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 					}
 					// console.debug('DB update');
 				}
-		
+
 				// console.debug(entry.name);
 				// console.debug(msgCount + '  : ' + entry.path);
-				if (entry.name.endsWith() === ".eml") {
+				if (entry.name.endsWith(".eml")) {
 					fileArray = await readFile1(entry.path);
 					fileArray = fixFile(fileArray, msgFolder);
+					try {
+						msgFolder.addMessage(fileArray);
+						if (msgCount % 10 === 0) {
+							IETwritestatus('Messages Imported: ' + msgCount);
+						}
+					} catch (e) {
+						console.debug(msgCount + '  AdMessageError ' + e);
+						console.debug(entry.path);
+					}
+					// messageEntries.push(entry);
+
 				} else {
 					console.debug('Skip Non-EML File: ' + entry.path + ' - ' + entry.name);
 				}
 				// console.debug(fileArray);
-				try {
-					msgFolder.addMessage(fileArray);
-					if (msgCount % 10 === 0) {
-						IETwritestatus('Messages Imported: ' + msgCount);
-					}
-				} catch (e) {
-					console.debug(msgCount + '  AdMessageError ' + e);
-					console.debug(entry.path);
-				}
-				// messageEntries.push(entry);
 			} else {
 				// console.debug('folder entry  ' + entry.name);
 			}
@@ -479,6 +489,7 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 			throw reason;
 		}
 	);
+
 
 }
 
@@ -546,7 +557,7 @@ function fixFile(data, msgFolder) {
 	if (!data.includes("X-Mozilla-Status"))
 		prologue = prologue + "X-Mozilla-Status: 0000\nX-Mozilla-Status2: 00000000\n";
 	else {
-	// else if (IETprefs.getBoolPref("extensions.importexporttoolsng.reset_mozilla_status")) {
+		// else if (IETprefs.getBoolPref("extensions.importexporttoolsng.reset_mozilla_status")) {
 		// Reset the X-Mozilla status
 		data = data.replace(/X-Mozilla-Status: \d{4}/, "X-Mozilla-Status: 0000");
 		data = data.replace(/X-Mozilla-Status2: \d{8}/, "X-Mozilla-Status2: 00000000");
