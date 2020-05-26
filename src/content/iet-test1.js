@@ -167,6 +167,7 @@ async function importOSFolderMessages(msgFolder, msgfolderArray, OSFolderArray) 
 		// console.debug('ImportFolder ' + folder);
 		await messageFolderImport(msgFolder, msgfolderArray[index], folder);
 
+		console.debug('AfterFolder DB close /update ' + msgfolderArray[index].name);
 		msgFolder.ForceDBClosed();
 		msgfolderArray[index].updateFolder(msgWindow);
 		// msgfolderArray[index].parent.updateFolder(msgWindow);
@@ -443,37 +444,52 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 	// Iterate through the directory
 	let p = iterator.forEach(
 		async function onEntry(entry) {
-			if (!entry.isDir) {
-				if (msgCount++ % test_updateCycle === 0) {
-					rootFolder.ForceDBClosed();
-					if (test_usecfawait) {
-						msgFolder.parent.updateFolder(msgWindow);
-					}
-					// console.debug('DB update');
-				}
 
-				// console.debug(entry.name);
-				// console.debug(msgCount + '  : ' + entry.path);
-				if (entry.name.endsWith(".eml")) {
-					fileArray = await readFile1(entry.path);
-					fileArray = fixFile(fileArray, msgFolder);
-					try {
-						msgFolder.addMessage(fileArray);
-						if (msgCount % 10 === 0) {
-							IETwritestatus('Messages Imported: ' + msgCount);
+			try {
+				if (!entry.isDir) {
+					if (msgCount++ % test_updateCycle === 0) {
+						try {
+							rootFolder.ForceDBClosed();
+							if (test_usecfawait) {
+								msgFolder.parent.updateFolder(msgWindow);
+								console.debug('message update folder');
+							}
+							console.debug('DB update');
+
+						} catch (error) {
+							console.debug('Message DB Exception ' + msgCount);
+							console.debug(error);
 						}
-					} catch (e) {
-						console.debug(msgCount + '  AdMessageError ' + e);
-						console.debug(entry.path);
 					}
-					// messageEntries.push(entry);
 
+					// console.debug(entry.name);
+					// console.debug(msgCount + '  : ' + entry.path);
+					if (entry.name.endsWith(".eml")) {
+						fileArray = await readFile1(entry.path);
+						fileArray = fixFile(fileArray, msgFolder);
+						try {
+							// console.debug('Adding ' + msgCount);
+							msgFolder.addMessage(fileArray);
+							// console.debug('Added ' + entry.path);
+							if (msgCount % 10 === 0) {
+								IETwritestatus('Messages Imported: ' + msgCount);
+							}
+						} catch (e) {
+							console.debug(msgCount + '  AdMessageError ' + e);
+							console.debug(entry.path);
+						}
+						// messageEntries.push(entry);
+
+					} else {
+						console.debug('Skip Non-EML File: ' + entry.path + ' - ' + entry.name);
+					}
+					// console.debug(fileArray);
 				} else {
-					console.debug('Skip Non-EML File: ' + entry.path + ' - ' + entry.name);
+					// console.debug('folder entry  ' + entry.name);
 				}
-				// console.debug(fileArray);
-			} else {
-				// console.debug('folder entry  ' + entry.name);
+			} catch (e) {
+				console.debug('EntryException ' + e);
+				throw (e);
 			}
 		}
 	);
@@ -572,7 +588,7 @@ function fixFile(data, msgFolder) {
 	}
 
 	// fix this cleidigh
-	// data = IETescapeBeginningFrom(data);
+	data = IETescapeBeginningFrom(data);
 	// Add the prologue to the EML text
 	data = prologue + data + "\n";
 

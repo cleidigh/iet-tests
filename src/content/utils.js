@@ -55,6 +55,15 @@ function IETdeletestatus(text) {
 		document.getElementById("statusText").setAttribute("label", "");
 }
 
+function IETescapeBeginningFrom(data) {
+	// Workaround to fix the "From " in beginning line problem in body messages
+	// See https://bugzilla.mozilla.org/show_bug.cgi?id=119441 and
+	// https://bugzilla.mozilla.org/show_bug.cgi?id=194382
+	// TB2 has uncorrect beahviour with html messages
+	// This is not very fine, but I didnt' find anything better...
+	var datacorrected = data.replace(/\nFrom /g, "\n From ");
+	return datacorrected;
+}
 
 
 function promptImportDirectory() {
