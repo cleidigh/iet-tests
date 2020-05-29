@@ -20,7 +20,7 @@
   xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   xmlns:html="http://www.w3.org/1999/xhtml" 
   id="iet-ng-tests-dialog"
-  title="ImportExportNG Tests 0.1.5" 
+  title="ImportExportNG Tests 0.1.6" 
   type="child"> 
 
    <!-- The preferencesBindings helper script gets the preferences in the attached JavaScript options.js -->
@@ -67,6 +67,8 @@
         </hbox>
         
         <checkbox label="Use createFolderAsync" preference="extensions.iet-ng-tests.test_usecfawait" />
+        <checkbox label="Use fromEscape" preference="extensions.iet-ng-tests.test_escape_from" />
+        <checkbox label="Use message loop dbclose" preference="extensions.iet-ng-tests.test_message_loop_dbclose" />
         
       </vbox>
     </html:fieldset>

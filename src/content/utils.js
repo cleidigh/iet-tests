@@ -18,6 +18,9 @@ function loadPreferences() {
 		{ id: "extensions.iet-ng-tests.test_updatecount", type: "int" },
 		{ id: "extensions.iet-ng-tests.test_pawaitcycle", type: "int" },
 		{ id: "extensions.iet-ng-tests.test_usecfawait", type: "bool" },
+		{ id: "extensions.iet-ng-tests.test_escape_from", type: "bool" },
+		{ id: "extensions.iet-ng-tests.test_message_loop_dbclose", type: "bool" },
+
 		// { id: "extensions.iet-ng-tests.test_", type: "bool" },
 		// { id: "extensions.iet-ng-tests.test_", type: "bool" },
 
@@ -55,14 +58,27 @@ function IETdeletestatus(text) {
 		document.getElementById("statusText").setAttribute("label", "");
 }
 
-function IETescapeBeginningFrom(data) {
+function IETescapeBeginningFrom(data, file) {
 	// Workaround to fix the "From " in beginning line problem in body messages
 	// See https://bugzilla.mozilla.org/show_bug.cgi?id=119441 and
 	// https://bugzilla.mozilla.org/show_bug.cgi?id=194382
 	// TB2 has uncorrect beahviour with html messages
 	// This is not very fine, but I didnt' find anything better...
-	var datacorrected = data.replace(/\nFrom /g, "\n From ");
-	return datacorrected;
+	const regex = /\nFrom /g;
+	const matches = data.matchAll(regex);
+	if (regex.test(data)) {
+		console.debug('From Found:' + file);
+	}
+	for (const match of matches) {
+		console.log(match.index);
+	}
+
+	if (Preferences.get("extensions.iet-ng-tests.test_escape_from").value) {
+		// console.debug('Beginning From escape:');
+		var datacorrected = data.replace(/\nFrom /g, "\n From ");
+		return datacorrected;
+	}
+	return data;
 }
 
 

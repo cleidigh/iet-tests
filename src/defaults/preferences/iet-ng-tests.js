@@ -9,3 +9,5 @@ pref("extensions.iet-ng-tests.test_updatecycle", 400);
 pref("extensions.iet-ng-tests.test_updatecount", 40);
 pref("extensions.iet-ng-tests.test_pawaitcycle", 40);
 pref("extensions.iet-ng-tests.test_usecfawait", false);
+pref("extensions.iet-ng-tests.test_escape_from", true);
+pref("extensions.iet-ng-tests.test_message_loop_dbclose", true);

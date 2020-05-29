@@ -159,17 +159,17 @@ async function importOSFolderMessages(msgFolder, msgfolderArray, OSFolderArray) 
 	// console.debug('ImportantMessages');
 	await messageFolderImport(msgFolder, msgfolderArray[0], folderArray[0]);
 
-	msgFolder.ForceDBClosed();
-	msgFolder.updateFolder(msgWindow);
+	// msgFolder.ForceDBClosed();
+	// msgFolder.updateFolder(msgWindow);
 
 	for (let index = 1; index < OSFolderArray.length; index++) {
 		const folder = OSFolderArray[index].path;
 		// console.debug('ImportFolder ' + folder);
 		await messageFolderImport(msgFolder, msgfolderArray[index], folder);
 
-		console.debug('AfterFolder DB close /update ' + msgfolderArray[index].name);
-		msgFolder.ForceDBClosed();
-		msgfolderArray[index].updateFolder(msgWindow);
+		// console.debug('AfterFolder DB close /update ' + msgfolderArray[index].name);
+		// msgFolder.ForceDBClosed();
+		// msgfolderArray[index].updateFolder(msgWindow);
 		// msgfolderArray[index].parent.updateFolder(msgWindow);
 
 
@@ -447,14 +447,14 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 
 			try {
 				if (!entry.isDir) {
-					if (msgCount++ % test_updateCycle === 0) {
+					if (msgCount++ % test_updateCycle === 0 && Preferences.get("extensions.iet-ng-tests.test_message_loop_dbclose").value) {
 						try {
 							rootFolder.ForceDBClosed();
 							if (test_usecfawait) {
 								msgFolder.parent.updateFolder(msgWindow);
 								console.debug('message update folder');
 							}
-							console.debug('DB update');
+							console.debug('MessageLoop DB update');
 
 						} catch (error) {
 							console.debug('Message DB Exception ' + msgCount);
@@ -466,7 +466,7 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 					// console.debug(msgCount + '  : ' + entry.path);
 					if (entry.name.endsWith(".eml")) {
 						fileArray = await readFile1(entry.path);
-						fileArray = fixFile(fileArray, msgFolder);
+						fileArray = fixFile(fileArray, msgFolder, entry.name);
 						try {
 							// console.debug('Adding ' + msgCount);
 							msgFolder.addMessage(fileArray);
@@ -530,7 +530,7 @@ async function readFile1(filePath) {
 }
 
 
-function fixFile(data, msgFolder) {
+function fixFile(data, msgFolder, file) {
 	// Fix and transform data
 
 	// var msgFolder = GetSelectedMsgFolders()[0];
@@ -588,7 +588,7 @@ function fixFile(data, msgFolder) {
 	}
 
 	// fix this cleidigh
-	data = IETescapeBeginningFrom(data);
+	data = IETescapeBeginningFrom(data, file);
 	// Add the prologue to the EML text
 	data = prologue + data + "\n";
 
