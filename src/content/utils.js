@@ -58,7 +58,7 @@ function IETdeletestatus(text) {
 		document.getElementById("statusText").setAttribute("label", "");
 }
 
-function IETescapeBeginningFrom(data, file) {
+function escapeBeginningFrom(data, file) {
 	// Workaround to fix the "From " in beginning line problem in body messages
 	// See https://bugzilla.mozilla.org/show_bug.cgi?id=119441 and
 	// https://bugzilla.mozilla.org/show_bug.cgi?id=194382
@@ -67,7 +67,7 @@ function IETescapeBeginningFrom(data, file) {
 	const regex = /\nFrom /g;
 	const matches = data.matchAll(regex);
 	if (regex.test(data)) {
-		console.debug('From Found:' + file);
+		console.debug('iet-test From Found:' + file);
 	}
 	for (const match of matches) {
 		console.log(match.index);

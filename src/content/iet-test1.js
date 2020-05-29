@@ -588,7 +588,7 @@ function fixFile(data, msgFolder, file) {
 	}
 
 	// fix this cleidigh
-	data = IETescapeBeginningFrom(data, file);
+	data = escapeBeginningFrom(data, file);
 	// Add the prologue to the EML text
 	data = prologue + data + "\n";
 
