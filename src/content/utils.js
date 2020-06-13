@@ -20,7 +20,7 @@ function loadPreferences() {
 		{ id: "extensions.iet-ng-tests.test_usecfawait", type: "bool" },
 		{ id: "extensions.iet-ng-tests.test_escape_from", type: "bool" },
 		{ id: "extensions.iet-ng-tests.test_message_loop_dbclose", type: "bool" },
-
+		{ id: "extensions.iet-ng-tests.test_offline_import", type: "bool" },
 		// { id: "extensions.iet-ng-tests.test_", type: "bool" },
 		// { id: "extensions.iet-ng-tests.test_", type: "bool" },
 
@@ -64,14 +64,15 @@ function escapeBeginningFrom(data, file) {
 	// https://bugzilla.mozilla.org/show_bug.cgi?id=194382
 	// TB2 has uncorrect beahviour with html messages
 	// This is not very fine, but I didnt' find anything better...
-	const regex = /\nFrom /g;
-	const matches = data.matchAll(regex);
-	if (regex.test(data)) {
-		console.debug('iet-test From Found:' + file);
-	}
-	for (const match of matches) {
-		console.log(match.index);
-	}
+	
+	// const regex = /\nFrom /g;
+	// const matches = data.matchAll(regex);
+	// if (regex.test(data)) {
+	// 	console.debug('iet-test From Found:' + file);
+	// }
+	// for (const match of matches) {
+	// 	console.log(match.index);
+	// }
 
 	if (Preferences.get("extensions.iet-ng-tests.test_escape_from").value) {
 		// console.debug('Beginning From escape:');

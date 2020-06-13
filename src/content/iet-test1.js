@@ -63,6 +63,14 @@ async function createFolderStructureT2() {
 }
 
 async function ImportEMLStructuredExt() {
+
+	if (Preferences.get("extensions.iet-ng-tests.test_offline_import").value) {
+		if(MailOfflineMgr.isOnline()) {
+			MailOfflineMgr.toggleOfflineStatus();
+		}
+	}
+	
+
 	msgCount = 0;
 	let msgFolder = GetSelectedMsgFolders()[0];
 
@@ -93,7 +101,12 @@ async function ImportEMLStructuredExt() {
 	console.debug('Import ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec');
 	IETwritestatus('Total Messages Imported: ' + msgCount + '  -  ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec', 0);
 
-
+	if (Preferences.get("extensions.iet-ng-tests.test_offline_import").value) {
+		if(!MailOfflineMgr.isOnline()) {
+			MailOfflineMgr.toggleOfflineStatus();
+		}
+	}
+	
 }
 
 function createFolderStructure(osFolder, rootOSFolder, msgFolder, dirs) {
@@ -437,7 +450,8 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 	var test_updateCount = Preferences.get("extensions.iet-ng-tests.test_updatecount").value;
 	var test_pawaitCycle = Preferences.get("extensions.iet-ng-tests.test_pawaitcycle").value;
 	var test_usecfawait = Preferences.get("extensions.iet-ng-tests.test_usecfawait").value;
-
+	
+	
 	msgFolder = msgFolder.QueryInterface(Ci.nsIMsgLocalMailFolder);
 
 	// console.debug('Folder ' + msgFolder.name);
