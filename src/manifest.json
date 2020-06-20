@@ -2,8 +2,8 @@
 	"manifest_version": 2,
 	"name": "iet-ng-tests",
 	"xpi-name": "iet-ng-tests",
-	"description": "IET tests",
-	"version": "0.1.8",
+	"description": "IETng tests",
+	"version": "0.1.9",
 	"author": "cleidigh",
 	"developer": {
 		"name": "Christopher Leidigh, Storm"

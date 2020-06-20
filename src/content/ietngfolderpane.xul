@@ -13,11 +13,13 @@
 	<popup id="folderPaneContext">
 		<menu label="IETng Tests" id="IETng_testmenu">
 			<menupopup id="ietng-tests-menu" >
-				<menuitem id="fc_t1" label="Folder Creation T1" oncommand="createFoldersT1();" />
+				<menuitem id="ieml" label="Import EML Messages (Single Folder)" oncommand="ImportEMLStructuredExt(1)" />
+				<menuitem id="ieml_str" label="Import EML Messages (with Folder Structure)" oncommand="ImportEMLStructuredExt(2)" />
 				<menuseparator />
-				<menuitem id="cfs_t2" label="createFolderStructureT2" oncommand="createFolderStructureT2()" />
+				<menuitem id="ieml_exp1" label="Import EML Messages (Experimental1)" oncommand="ImportEMLStructuredExt(3)" />
+				<menuitem id="fc_t1" label="Test - Folder Creation T1" oncommand="createFoldersT1();" />
+				<menuitem id="cfs_t2" label="Test - createFolderStructureT2" oncommand="createFolderStructureT2()" />
 				
-				<menuitem id="ieml_t3" label="ImportEMLStructuredExt" oncommand="ImportEMLStructuredExt()" />
 				<!-- <menuitem id="ieml_t3" label="ImportEMLStructuredExt"  /> -->
 				<menuitem id="openIETtestoptions" label="Test Options" oncommand="openIETtestoptions()" />
 			</menupopup>

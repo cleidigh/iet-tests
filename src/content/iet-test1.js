@@ -10,6 +10,9 @@ var { OS } = ChromeUtils.import("resource://gre/modules/osfile.jsm");
 var msgfolderArray = [];
 var folderArray = [];
 var msgCount = 0;
+var rootMsgFolder;
+var worker = null;
+var overallStartTime;
 
 function createFoldersT1() {
 
@@ -62,51 +65,71 @@ async function createFolderStructureT2() {
 	}
 }
 
-async function ImportEMLStructuredExt() {
+async function ImportEMLStructuredExt(type) {
 
 	if (Preferences.get("extensions.iet-ng-tests.test_offline_import").value) {
-		if(MailOfflineMgr.isOnline()) {
+		if (MailOfflineMgr.isOnline()) {
 			MailOfflineMgr.toggleOfflineStatus();
 		}
 	}
-	
+
 
 	msgCount = 0;
-	let msgFolder = GetSelectedMsgFolders()[0];
+	rootMsgFolder = GetSelectedMsgFolders()[0];
+	rootMsgFolder = rootMsgFolder.QueryInterface(Ci.nsIMsgLocalMailFolder);
 
 	var osFolder = promptImportDirectory();
 
-	let startTime = new Date();
+	if (!osFolder) {
+		return;
+	}
 
-	var dirs = await getImportFolderStructure(osFolder.file.path);
-	console.debug('OS Folders:');
+	let startTime = new Date();
+	overallStartTime = startTime;
+	var dirs;
+
+	if (type === 1) {
+		dirs = await getImportFolderStructure(osFolder.file.path, false);
+	} else if (type === 2) {
+		dirs = await getImportFolderStructure(osFolder.file.path, true);
+	} else {
+		dirs = worker1(osFolder.file.path);
+	}
+
+	let stepTime = new Date();
+	var test_bcount = Preferences.get("extensions.iet-ng-tests.test_mcount").value;
+	console.debug('Import ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec');
+	IETwritestatus('Import ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec  : batchCount: ' + test_bcount);
+
+	console.debug('OS Folders: ' + dirs.length);
 	for (let index = 0; index < dirs.length; index++) {
 		const element = dirs[index];
 		console.debug(element.path.length + ' : ' + element.path);
 	}
+
 	// return;
 	var test_cycles = Preferences.get("extensions.iet-ng-tests.test_cycles").value;
 	// console.debug(test_cycles);
 
-	createFolderStructure(osFolder, osFolder.file.path, msgFolder, dirs);
+	createFolderStructure(osFolder, osFolder.file.path, rootMsgFolder, dirs);
 
 	// for (let index = 0; index < folderArray.length; index++) {
 	// 	const element = folderArray[index];
 	// 	console.debug(element);
 	// }
 
-	await importOSFolderMessages(msgFolder, msgfolderArray, dirs);
-	let stepTime = new Date();
+	await importOSFolderMessages(rootMsgFolder, msgfolderArray, dirs);
+	stepTime = new Date();
 	console.debug('Total Messages Imported: ' + msgCount);
 	console.debug('Import ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec');
 	IETwritestatus('Total Messages Imported: ' + msgCount + '  -  ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec', 0);
 
 	if (Preferences.get("extensions.iet-ng-tests.test_offline_import").value) {
-		if(!MailOfflineMgr.isOnline()) {
+		if (!MailOfflineMgr.isOnline()) {
 			MailOfflineMgr.toggleOfflineStatus();
 		}
 	}
-	
+
 }
 
 function createFolderStructure(osFolder, rootOSFolder, msgFolder, dirs) {
@@ -181,11 +204,6 @@ async function importOSFolderMessages(msgFolder, msgfolderArray, OSFolderArray) 
 		await messageFolderImport(msgFolder, msgfolderArray[index], folder);
 
 		// console.debug('AfterFolder DB close /update ' + msgfolderArray[index].name);
-		// msgFolder.ForceDBClosed();
-		// msgfolderArray[index].updateFolder(msgWindow);
-		// msgfolderArray[index].parent.updateFolder(msgWindow);
-
-
 	}
 }
 
@@ -393,13 +411,89 @@ async function dirWalk2(dirPath) {
 
 }
 
-async function getImportFolderStructure(rootDirPath) {
-	let baseDirs = await importOSDirIteration(rootDirPath);
+async function getImportFolderStructure(rootDirPath, recursive) {
+	let baseDirs = await importOSDirIteration(rootDirPath, recursive);
 	baseDirs.unshift({ path: rootDirPath });
 	return baseDirs;
 }
 
-async function importOSDirIteration(rootDirPath) {
+
+async function worker1(dirPath) {
+	if (worker === null) {
+		worker = new ChromeWorker("chrome://iet-ng-tests/content/worker1.js");
+	}
+
+	var msgCount = 0;
+	console.debug('started worker');
+	worker.onmessage = async function (event) {
+		// console.debug(event);
+		// console.debug(event.data);
+			
+		switch (event.data.msgType) {
+			
+		// switch (event.data) {
+			case 'MfolderArray':
+				// console.debug(event.data.folderArray.length);
+				let stepTime = new Date();
+				console.debug('O Import ElapsedTime: ' + (stepTime - overallStartTime) / 1000 + ' sec');
+				IETwritestatus('O Import ElapsedTime: ' + (stepTime - overallStartTime) / 1000 + ' sec  : batchCount: ' + test_bcount);
+			
+				break;
+			// default:
+			case 'fileArray':
+				// console.debug('MessageSize ' + event.data.length);
+				// rootMsgFolder.addMessage(event.data, event.data.fileArray);
+				rootMsgFolder.addMessage(event.data.fileArray);
+				// if (msgCount++ % 10 === 0) {
+				// 	IETwritestatus('Messages Imported: ' + msgCount);
+				// }
+				break;
+		}
+
+	}
+	// let test_cycles = 3;
+	var test_bcount = Preferences.get("extensions.iet-ng-tests.test_mcount").value;
+	worker.postMessage({ d: dirPath, bc: test_bcount });
+}
+
+
+async function importOSDirIteration2(rootDirPath) {
+	var iterator = new OS.File.DirectoryIterator(rootDirPath);
+	var subdirs = [];
+	var p = [];
+	var exit = false;
+	var test_bcount = Preferences.get("extensions.iet-ng-tests.test_mcount").value;
+
+	// while (true) {
+	for (let index = 0; index < 6000; index++) {
+		// console.debug('Index ' + index);
+		p = await iterator.nextBatch(test_bcount);
+
+		// let ea = Promise.all();
+		// console.debug('dirs: ' + ea.map(d => d.path + ' '));
+		// console.debug(p);
+		if (!p.length) {
+			// console.debug('and batch');
+			break;
+		}
+		subdirs = subdirs.concat(p);
+		// }
+
+		// p.then(e => {
+		// 	console.debug(e);
+		// 	console.debug(e.length);
+		// 	if (!e.length) {
+		// 		exit = true;
+		// 	}
+		// });
+	}
+	// console.debug('Finish');
+	return subdirs;
+
+	// await Promise.all(p);
+}
+
+async function importOSDirIteration(rootDirPath, recursive) {
 	var iterator = new OS.File.DirectoryIterator(rootDirPath);
 	var subdirs = [];
 
@@ -407,7 +501,7 @@ async function importOSDirIteration(rootDirPath) {
 	// Iterate through the directory
 	let p = iterator.forEach(
 		function onEntry(entry) {
-			if (entry.isDir) {
+			if (entry.isDir && recursive) {
 				// console.debug(entry.name);
 				// console.debug(entry.path);
 				subdirs.push(entry);
@@ -422,18 +516,22 @@ async function importOSDirIteration(rootDirPath) {
 		async function onSuccess() {
 			iterator.close();
 			// console.debug('dirs: ' + subdirs.map(d => d.path + ' '));
+			if (recursive) {
 
-			for (const dir of subdirs) {
-				// console.debug('subWalk '+ dir.name);
-				let dirs = await importOSDirIteration(dir.path);
-				subdirs = subdirs.concat(dirs);
-				// console.debug('accumulated dirs: ' + subdirs.map(d => d.name + ' '));
+				for (const dir of subdirs) {
+					// console.debug('subWalk '+ dir.name);
+					let dirs = await importOSDirIteration(dir.path, recursive);
+					subdirs = subdirs.concat(dirs);
+					// console.debug('accumulated dirs: ' + subdirs.map(d => d.name + ' '));
+				}
 			}
-
 			// subdirs.unshift({path: rootDirPath});
 			return subdirs;
 		},
-		function onFailure(reason) {
+		async function onFailure(reason) {
+			if (reason === 2) {
+				// onSuccess();
+			}
 			iterator.close();
 			throw reason;
 		}
@@ -450,11 +548,11 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 	var test_updateCount = Preferences.get("extensions.iet-ng-tests.test_updatecount").value;
 	var test_pawaitCycle = Preferences.get("extensions.iet-ng-tests.test_pawaitcycle").value;
 	var test_usecfawait = Preferences.get("extensions.iet-ng-tests.test_usecfawait").value;
-	
-	
+
+
 	msgFolder = msgFolder.QueryInterface(Ci.nsIMsgLocalMailFolder);
 
-	// console.debug('Folder ' + msgFolder.name);
+	console.debug('Folder ' + msgFolder.name);
 	// Iterate through the directory
 	let p = iterator.forEach(
 		async function onEntry(entry) {
@@ -594,12 +692,13 @@ function fixFile(data, msgFolder, file) {
 	}
 	// If the message has no X-Account-Key, we add it to it, taking it from the account selected
 	// cleidigh - correct logic conversion
-	if (!data.includes("X-Account-Key")) {
-		var myAccountManager = Cc["@mozilla.org/messenger/account-manager;1"]
-			.getService(Ci.nsIMsgAccountManager);
-		var myAccount = myAccountManager.FindAccountForServer(msgFolder.server);
-		prologue = prologue + "X-Account-Key: " + myAccount.key + "\n";
-	}
+	
+	// if (!data.includes("X-Account-Key")) {
+	// 	var myAccountManager = Cc["@mozilla.org/messenger/account-manager;1"]
+	// 		.getService(Ci.nsIMsgAccountManager);
+	// 	var myAccount = myAccountManager.FindAccountForServer(msgFolder.server);
+	// 	prologue = prologue + "X-Account-Key: " + myAccount.key + "\n";
+	// }
 
 	// fix this cleidigh
 	data = escapeBeginningFrom(data, file);
