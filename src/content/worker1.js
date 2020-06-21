@@ -231,7 +231,7 @@ function fixFile(data, msgFolder, file) {
 	// msgFolder = msgFolder.QueryInterface(Ci.nsIMsgLocalMailFolder);
 
 	// strip off the null characters, that break totally import and display
-	// data = data.replace(/\x00/g, "");
+	data = data.replace(/\x00/g, "");
 	var now = new Date;
 	var nowString;
 
@@ -242,7 +242,6 @@ function fixFile(data, msgFolder, file) {
 	} catch (e) {
 		nowString = now.toString().replace(/GMT.+/, "");
 	}
-
 	var top = data.substring(0, 2000);
 
 	// Fix for crazy format returned by Hotmail view-source
@@ -284,7 +283,7 @@ function fixFile(data, msgFolder, file) {
 
 	// fix this cleidigh
 	// data = escapeBeginningFrom(data, file);
-	// data = data.replace(/\nFrom /g, "\n From ");
+	data = data.replace(/\nFrom /g, "\n From ");
 	// Add the prologue to the EML text
 	data = prologue + data + "\n";
 
