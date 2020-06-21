@@ -13,6 +13,7 @@ var msgCount = 0;
 var rootMsgFolder;
 var worker = null;
 var overallStartTime;
+var importComplete = false;
 
 function createFoldersT1() {
 
@@ -60,7 +61,7 @@ async function createFolderStructureT2() {
 	for (let index = 0; index < test_cycles; index++) {
 		createFolderStructure(osFolder, osFolder.file.path, msgFolder, dirs);
 		if (test_cycles > 1) {
-			await resetSelectedFolder(msgFolder);
+			await resCreateFoldersetSelectedFolder(msgFolder);
 		}
 	}
 }
@@ -93,7 +94,9 @@ async function ImportEMLStructuredExt(type) {
 	} else if (type === 2) {
 		dirs = await getImportFolderStructure(osFolder.file.path, true);
 	} else {
-		dirs = worker1(osFolder.file.path);
+		dirs = worker1(osFolder);
+		console.debug('AfterWorker');
+		return;
 	}
 
 	let stepTime = new Date();
@@ -137,7 +140,8 @@ function createFolderStructure(osFolder, rootOSFolder, msgFolder, dirs) {
 
 	var curParentFolder = null;
 
-	// console.debug(rootOSFolder);
+	console.debug(rootOSFolder);
+	console.debug(dirs);
 	folderArray = dirs.map(d => {
 		let da;
 		if (navigator.platform.toLowerCase().indexOf("win") > -1) {
@@ -178,6 +182,69 @@ function createFolderStructure(osFolder, rootOSFolder, msgFolder, dirs) {
 				curParentFolder.createSubfolder(newFolderName, msgWindow);
 				// console.debug('created subfolder: '+ newFolderName);
 				msgfolderArray[index] = curParentFolder.getChildNamed(newFolderName);
+			}
+
+		} catch (error) {
+			console.debug('Error ' + error);
+			console.debug(newFolderName);
+		}
+
+	}
+	let stepTime = new Date();
+	console.debug('CreateFolders ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec');
+
+}
+
+function createFolderStructure2(osFolder, rootOSFolder, msgFolder, dirs) {
+	let startTime = new Date();
+
+	var curParentFolder = null;
+
+	console.debug(rootOSFolder);
+	console.debug(dirs);
+	folderArray = dirs.map(d => {
+		let da;
+		if (navigator.platform.toLowerCase().indexOf("win") > -1) {
+			da = d.split(rootOSFolder + '\\')[1];
+			if (!da) {
+				da = rootOSFolder;
+			}
+		} else {
+			da = d.split(rootOSFolder + '/')[1];
+		}
+		return da;
+	});
+	console.debug('Folder Array');
+	folderArray.map(d => {
+		console.debug(d);
+	});
+
+	// folderArray.unshift(rootOSFolder);
+	msgfolderArray[0] = msgFolder;
+	msgfolderArray[0] = msgfolderArray[0].QueryInterface(Ci.nsIMsgLocalMailFolder);
+
+	for (let index = 1; index < folderArray.length; index++) {
+		if (index % 400 === 0) {
+			msgFolder.ForceDBClosed();
+			console.debug('update');
+		}
+
+		let newFolderName = OS.Path.basename(folderArray[index]);
+		let OSDirPath = OS.Path.dirname(folderArray[index]);
+
+		try {
+			if (OSDirPath === '.') {
+				curParentFolder = msgFolder;
+				curParentFolder.createSubfolder(newFolderName, msgWindow);
+				// console.debug('created: '+ newFo.lderName);
+				msgfolderArray[index] = curParentFolder.getChildNamed(newFolderName);
+				msgfolderArray[index] = msgfolderArray[index].QueryInterface(Ci.nsIMsgLocalMailFolder);
+			} else {
+				curParentFolder = msgfolderArray[folderArray.indexOf(OSDirPath)];
+				curParentFolder.createSubfolder(newFolderName, msgWindow);
+				// console.debug('created subfolder: '+ newFolderName);
+				msgfolderArray[index] = curParentFolder.getChildNamed(newFolderName);
+				msgfolderArray[index] = msgfolderArray[index].QueryInterface(Ci.nsIMsgLocalMailFolder);
 			}
 
 		} catch (error) {
@@ -418,12 +485,16 @@ async function getImportFolderStructure(rootDirPath, recursive) {
 }
 
 
-async function worker1(dirPath) {
+async function worker1(osFolder) {
 	if (worker === null) {
 		worker = new ChromeWorker("chrome://iet-ng-tests/content/worker1.js");
 	}
 
+	var dirPath = osFolder.file.path;
 	var msgCount = 0;
+	var dirs;
+	var stepTime;
+
 	console.debug('started worker');
 	worker.onmessage = async function (event) {
 		// console.debug(event);
@@ -432,28 +503,52 @@ async function worker1(dirPath) {
 		switch (event.data.msgType) {
 			
 		// switch (event.data) {
-			case 'MfolderArray':
+			case 'folderArray':
+				dirs = event.data.folderArray;
+				console.debug('Folders');
+				// console.debug(dirs);
+				let cfStartTime = new Date();
+				createFolderStructure2(osFolder, osFolder.file.path, rootMsgFolder, dirs);
 				// console.debug(event.data.folderArray.length);
-				let stepTime = new Date();
+				stepTime = new Date();
+				console.debug('CreateFolders ElapsedTime: ' + (stepTime - cfStartTime ) / 1000 + ' sec');
+				IETwritestatus('CreateFolders ElapsedTime: ' + (stepTime - cfStartTime ) / 1000 + ' sec  : batchCount: ' + test_bcount);
+				worker.postMessage({ msgType: 'createFoldersComplete'});
+				console.debug('SentFoldersComplete');
+				break;
+
+			case 'messagesComplete':
+				// console.debug(event.data.folderArray.length);
+				stepTime = new Date();
 				console.debug('O Import ElapsedTime: ' + (stepTime - overallStartTime) / 1000 + ' sec');
 				IETwritestatus('O Import ElapsedTime: ' + (stepTime - overallStartTime) / 1000 + ' sec  : batchCount: ' + test_bcount);
-			
+				importComplete = true;
 				break;
 			// default:
 			case 'fileArray':
 				// console.debug('MessageSize ' + event.data.length);
 				// rootMsgFolder.addMessage(event.data, event.data.fileArray);
-				rootMsgFolder.addMessage(event.data.fileArray);
+				msgfolderArray[event.data.folderIndex].addMessage(event.data.fileArray);
 				// if (msgCount++ % 10 === 0) {
 				// 	IETwritestatus('Messages Imported: ' + msgCount);
 				// }
 				break;
 		}
 
+		
 	}
+
 	// let test_cycles = 3;
 	var test_bcount = Preferences.get("extensions.iet-ng-tests.test_mcount").value;
-	worker.postMessage({ d: dirPath, bc: test_bcount });
+	console.debug('Send start the import');
+	worker.postMessage({msgType: 'startImport', d: dirPath, bc: test_bcount });
+
+	let c = 20;
+		while(!importComplete && --c) {
+			await sleepA(1000);
+			// console.debug('sleep ' + c);
+		}
+	// console.debug('');
 }
 
 
