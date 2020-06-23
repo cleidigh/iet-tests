@@ -75,7 +75,8 @@ async function ImportEMLStructuredExt(type) {
 		}
 	}
 
-
+	folderArray = [];
+	skippedFolderArray = [];
 	msgCount = 0;
 	rootMsgFolder = GetSelectedMsgFolders()[0];
 	rootMsgFolder = rootMsgFolder.QueryInterface(Ci.nsIMsgLocalMailFolder);

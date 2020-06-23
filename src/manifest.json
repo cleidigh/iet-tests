@@ -3,7 +3,7 @@
 	"name": "iet-ng-tests",
 	"xpi-name": "iet-ng-tests",
 	"description": "IETng tests",
-	"version": "0.1.11",
+	"version": "0.1.12",
 	"author": "cleidigh",
 	"developer": {
 		"name": "Christopher Leidigh, Storm"
