@@ -108,12 +108,12 @@ async function ImportEMLStructuredExt(type) {
 		e = statusWin.document.getElementById("import_setup");
 		let textStatus = "";
 		let rf = osFolder.file.path;
-		
+
 		if (skippedFolderArray.length) {
-			textStatus += "Skipping Folders (path length exceeded):\n\n" + skippedFolderArray.map(d => d.path.split(rf+'\\')[1]).join('\n') + '\n\n';
+			textStatus += "Skipping Folders (path length exceeded):\n\n" + skippedFolderArray.map(d => d.path.split(rf + '\\')[1]).join('\n') + '\n\n';
 		}
-			
-		textStatus += "Importing Folders:\n\n" + dirs.map(d => d.path.split(rf+'\\')[1]).join('\n');
+
+		textStatus += "Importing Folders:\n\n" + dirs.map(d => d.path.split(rf + '\\')[1]).join('\n');
 
 		e.textContent = textStatus;
 
@@ -837,14 +837,15 @@ function fixFile(data, msgFolder, file) {
 	var prologue = "From - " + nowString + "\n"; // The first line must begin with "From -", the following is not important
 	// If the message has no X-Mozilla-Status, we add them to it
 	// cleidigh - correct logic conversion
-	if (!data.includes("X-Mozilla-Status"))
+	if (!data.includes("X-Mozilla-Status")) {
 		prologue = prologue + "X-Mozilla-Status: 0000\nX-Mozilla-Status2: 00000000\n";
-	else {
-		// else if (IETprefs.getBoolPref("extensions.importexporttoolsng.reset_mozilla_status")) {
-		// Reset the X-Mozilla status
-		data = data.replace(/X-Mozilla-Status: \d{4}/, "X-Mozilla-Status: 0000");
-		data = data.replace(/X-Mozilla-Status2: \d{8}/, "X-Mozilla-Status2: 00000000");
 	}
+	// else {
+	// else if (IETprefs.getBoolPref("extensions.importexporttoolsng.reset_mozilla_status")) {
+	// Reset the X-Mozilla status
+	// data = data.replace(/X-Mozilla-Status: \d{4}/, "X-Mozilla-Status: 0000");
+	// data = data.replace(/X-Mozilla-Status2: \d{8}/, "X-Mozilla-Status2: 00000000");
+	// }
 	// If the message has no X-Account-Key, we add it to it, taking it from the account selected
 	// cleidigh - correct logic conversion
 
