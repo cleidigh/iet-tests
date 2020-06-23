@@ -9,6 +9,7 @@ var { OS } = ChromeUtils.import("resource://gre/modules/osfile.jsm");
 
 var msgfolderArray = [];
 var folderArray = [];
+var skippedFolderArray = [];
 var msgCount = 0;
 var rootMsgFolder;
 var worker = null;
@@ -89,10 +90,36 @@ async function ImportEMLStructuredExt(type) {
 	overallStartTime = startTime;
 	var dirs;
 
+	var statusWin = openDialog("chrome://iet-ng-tests/content/importstatus.xul", "", "chrome,centerscreen");
+	await sleepA(80);
+	console.debug(statusWin.document.title);
+	var e = statusWin.document.getElementById("import_folder");
+	e.textContent = osFolder.file.path;
+	e = statusWin.document.getElementById("import_stage");
+	e.textContent = "Scanning Import Folders...";
+
 	if (type === 1) {
 		dirs = await getImportFolderStructure(osFolder.file.path, false);
 	} else if (type === 2) {
 		dirs = await getImportFolderStructure(osFolder.file.path, true);
+		e = statusWin.document.getElementById("import_fcount");
+		e.textContent = dirs.length;
+
+		e = statusWin.document.getElementById("import_setup");
+		let textStatus = "";
+		let rf = osFolder.file.path;
+		
+		if (skippedFolderArray.length) {
+			textStatus += "Skipping Folders (path length exceeded):\n\n" + skippedFolderArray.map(d => d.path.split(rf+'\\')[1]).join('\n') + '\n\n';
+		}
+			
+		textStatus += "Importing Folders:\n\n" + dirs.map(d => d.path.split(rf+'\\')[1]).join('\n');
+
+		e.textContent = textStatus;
+
+		e = statusWin.document.getElementById("import_stage");
+		e.textContent = "Creating Folders...";
+
 	} else {
 		dirs = worker1(osFolder);
 		console.debug('AfterWorker');
@@ -479,8 +506,29 @@ async function dirWalk2(dirPath) {
 }
 
 async function getImportFolderStructure(rootDirPath, recursive) {
-	let baseDirs = await importOSDirIteration(rootDirPath, recursive);
+	let maxPathLen = 250 - rootMsgFolder.filePath.path.length;
+	console.debug(rootMsgFolder.name + '  ' + rootMsgFolder.filePath.path.length + '  ' + maxPathLen);
+	let baseDirs = await importOSDirIteration(rootDirPath, recursive, maxPathLen);
+
+	baseDirs = baseDirs.reduce(function (result, d) {
+		// let dsubLen = d.path.split(rootDirPath + '\\')[1].split('\\').join('.sbd\\').length;
+		let dsub2 = d.path.split(rootDirPath + '\\')[1].split('\\');
+		let dsub = d.path.split(rootDirPath + '\\')[1].split('\\').join('.sbd\\');
+		console.debug(dsub + '  ' + dsub.length);
+		// console.debug(d.path + '  '+dsub2);
+		// console.debug(d.path + '  '+dsub);
+
+		if (dsub.length < maxPathLen) {
+			result.push(d);
+		} else {
+			console.debug('Folder Path Too Long: ' + d.path);
+			skippedFolderArray.push(d);
+		}
+		return result;
+	}, []);
+
 	baseDirs.unshift({ path: rootDirPath });
+	console.debug(baseDirs);
 	return baseDirs;
 }
 
@@ -495,25 +543,25 @@ async function worker1(osFolder) {
 	var dirs;
 	var stepTime;
 
-	console.debug('started worker');
+	// console.debug('started worker');
 	worker.onmessage = async function (event) {
 		// console.debug(event);
 		// console.debug(event.data);
-			
+
 		switch (event.data.msgType) {
-			
-		// switch (event.data) {
+
+			// switch (event.data) {
 			case 'folderArray':
 				dirs = event.data.folderArray;
-				console.debug('Folders');
+				console.debug('Create Folders');
 				// console.debug(dirs);
 				let cfStartTime = new Date();
 				createFolderStructure2(osFolder, osFolder.file.path, rootMsgFolder, dirs);
 				// console.debug(event.data.folderArray.length);
 				stepTime = new Date();
-				console.debug('CreateFolders ElapsedTime: ' + (stepTime - cfStartTime ) / 1000 + ' sec');
-				IETwritestatus('CreateFolders ElapsedTime: ' + (stepTime - cfStartTime ) / 1000 + ' sec  : batchCount: ' + test_bcount);
-				worker.postMessage({ msgType: 'createFoldersComplete'});
+				console.debug('CreateFolders ElapsedTime: ' + (stepTime - cfStartTime) / 1000 + ' sec');
+				IETwritestatus('CreateFolders ElapsedTime: ' + (stepTime - cfStartTime) / 1000 + ' sec  : batchCount: ' + test_bcount);
+				worker.postMessage({ msgType: 'createFoldersComplete' });
 				console.debug('SentFoldersComplete');
 				break;
 
@@ -521,8 +569,14 @@ async function worker1(osFolder) {
 				// console.debug(event.data.folderArray.length);
 				stepTime = new Date();
 				console.debug('O Import ElapsedTime: ' + (stepTime - overallStartTime) / 1000 + ' sec');
-				IETwritestatus('O Import ElapsedTime: ' + (stepTime - overallStartTime) / 1000 + ' sec  : batchCount: ' + test_bcount);
+				IETwritestatus('Total Import ElapsedTime: ' + (stepTime - overallStartTime) / 1000 + ' sec  : batchCount: ' + test_bcount);
 				importComplete = true;
+
+				if (Preferences.get("extensions.iet-ng-tests.test_offline_import").value) {
+					if (!MailOfflineMgr.isOnline()) {
+						MailOfflineMgr.toggleOfflineStatus();
+					}
+				}
 				break;
 			// default:
 			case 'fileArray':
@@ -535,19 +589,19 @@ async function worker1(osFolder) {
 				break;
 		}
 
-		
+
 	}
 
 	// let test_cycles = 3;
 	var test_bcount = Preferences.get("extensions.iet-ng-tests.test_mcount").value;
 	console.debug('Send start the import');
-	worker.postMessage({msgType: 'startImport', d: dirPath, bc: test_bcount });
+	worker.postMessage({ msgType: 'startImport', d: dirPath, bc: test_bcount });
 
-	let c = 20;
-		while(!importComplete && --c) {
-			await sleepA(1000);
-			// console.debug('sleep ' + c);
-		}
+	// let c = 20;
+	// 	while(!importComplete && --c) {
+	// 		await sleepA(1000);
+	// 		// console.debug('sleep ' + c);
+	// 	}
 	// console.debug('');
 }
 
@@ -672,19 +726,25 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 					// console.debug(entry.name);
 					// console.debug(msgCount + '  : ' + entry.path);
 					if (entry.name.endsWith(".eml")) {
-						fileArray = await readFile1(entry.path);
-						fileArray = fixFile(fileArray, msgFolder, entry.name);
-						try {
-							// console.debug('Adding ' + msgCount);
-							msgFolder.addMessage(fileArray);
-							// console.debug('Added ' + entry.path);
-							if (msgCount % 10 === 0) {
-								IETwritestatus('Messages Imported: ' + msgCount);
-							}
-						} catch (e) {
-							console.debug(msgCount + '  AdMessageError ' + e);
-							console.debug(entry.path);
-						}
+
+						// fileArray = readFile1(entry.path);
+						// fileArray = fixFile(fileArray, msgFolder, entry.name);
+						readFile1(entry.path)
+							.then(f => {
+								f = fixFile(f, msgFolder, entry.name);
+								try {
+									msgFolder.addMessage(f);
+									if (msgCount % 10 === 0) {
+										IETwritestatus('Messages Imported: ' + msgCount);
+									}
+								} catch (e) {
+									console.debug(msgCount + '  AdMessageError ' + e);
+									console.debug(entry.path);
+								}
+
+							});
+
+
 						// messageEntries.push(entry);
 
 					} else {
@@ -787,7 +847,7 @@ function fixFile(data, msgFolder, file) {
 	}
 	// If the message has no X-Account-Key, we add it to it, taking it from the account selected
 	// cleidigh - correct logic conversion
-	
+
 	// if (!data.includes("X-Account-Key")) {
 	// 	var myAccountManager = Cc["@mozilla.org/messenger/account-manager;1"]
 	// 		.getService(Ci.nsIMsgAccountManager);

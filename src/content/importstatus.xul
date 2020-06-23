@@ -19,8 +19,8 @@
 <dialog class="options-dialog" 
   xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   xmlns:html="http://www.w3.org/1999/xhtml" 
-  id="iet-ng-tests-dialog"
-  title="ImportExportNG Tests 0.1.11" 
+  id="iet-ng-status-dialog"
+  title="ImportExportNG Tests 0.1.11 - EML Message Import"
   type="child"> 
 
    <!-- The preferencesBindings helper script gets the preferences in the attached JavaScript options.js -->
@@ -35,41 +35,34 @@
     <hbox flex="1"></hbox>
     <!-- Use HTML element fieldset and legend to replace groupbox/caption -->
     <html:fieldset>
-      <html:legend>Test Parameters</html:legend>
+      <html:legend>Import Status</html:legend>
       <!-- The 'preference' attribute name matches the IDs in the legacy preference system -->
       <vbox>
-      <hbox><label width="120px" control="test_cycles">Cycles</label>
-        <textbox id="test_cycles" preference="extensions.iet-ng-tests.test_cycles" />
+      <hbox><label width="120px" control="test_cycls">Stage:</label>
+        <label id="import_stage" ></label>
+        </hbox>
+      
+      <hbox><label width="120px" control="test_cycls">Import Folder:</label>
+      <label id="import_folder" ></label>
+      </hbox>
+      <hbox>
+      <label width="120px" control="test_fcount">Source Folders:</label>
+              <label id="import_fcount" width="120px" ></label>
         </hbox>
         <hbox>
-      <label width="120px" control="test_fcount"># Folders</label>
-        <textbox id="test_fcount" preference="extensions.iet-ng-tests.test_fcount" />
+      <label width="120px" control="test_mcount">Source Messages:</label>
+      <label id="import_mcount" width="120px" ></label>
+        </hbox>
+        <spacer height="10px" />
+        <hbox>
+      <label width="120px">Import Setup:</label>
+        <html:textarea id="import_setup" rows="8" cols="100" style="white-space: pre; overflow-x: auto;"></html:textarea>
         </hbox>
         <hbox>
-      <label width="120px" control="test_mcount"># Messages/F</label>
-        <textbox id="test_mcount" preference="extensions.iet-ng-tests.test_mcount" />
+      <label width="120px" control="test_updatecount">Imported Messages:</label>
+        <label id="imported_mcount" width="120px" ></label>
         </hbox>
-        <hbox>
-      <label width="120px" control="test_msize">Message Size</label>
-        <textbox id="test_msize" preference="extensions.iet-ng-tests.test_msize" />
-        </hbox>
-        <hbox>
-      <label width="120px" control="test_updatecount">updateCount</label>
-        <textbox id="test_updatecount" preference="extensions.iet-ng-tests.test_updatecount" />
-        </hbox>
-       <hbox>
-      <label width="120px" control="test_updatecycle">updateCycle</label>
-        <textbox id="test_updatecycle" preference="extensions.iet-ng-tests.test_updatecycle" />
-        </hbox>
-        <hbox>
-      <label width="120px" control="test_pawaitcycle">pAwaitCycle</label>
-        <textbox id="test_pawaitcycle" preference="extensions.iet-ng-tests.test_pawaitcycle" />
-        </hbox>
-        
-        <checkbox label="Use createFolderAsync" preference="extensions.iet-ng-tests.test_usecfawait" />
-        <checkbox label="Use fromEscape" preference="extensions.iet-ng-tests.test_escape_from" />
-        <checkbox label="Use message loop dbclose" preference="extensions.iet-ng-tests.test_message_loop_dbclose" />
-        <checkbox label="Use off-line mode for import" preference="extensions.iet-ng-tests.test_offline_import" />
+        <!-- <checkbox label="Use off-line mode for import" preference="extensions.iet-ng-tests.test_offline_import" /> -->
         
       </vbox>
     </html:fieldset>
@@ -86,6 +79,6 @@
   <!-- The overlay loader utilizing the preferences helper script seems to want to be at the bottom -->
   <!-- of the dialog page.  preferencesBindings first. -->
   <!-- <script type="application/javascript" src="chrome://global/content/preferencesBindings.js" /> -->
-  <script type="application/javascript" src="options.js"/>
+  <!-- <script type="application/javascript" src="status.js"/> -->
 
 </dialog>

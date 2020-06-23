@@ -5,6 +5,7 @@ importScripts("resource://gre/modules/osfile.jsm");
 var msgCount = 0;
 var folderArray = [];
 var endTime, startTime;
+var gFileArray = "";
 
 function worker1(dirPath) {
 	console.debug('started worker  ' + dirPath);
@@ -24,7 +25,6 @@ onmessage = function (event) {
 			folderArray = dw(dirPath);
 			folderArray.unshift(dirPath);
 			// let d = importOSDirIterationCW(dirPath, event.data.bc);
-			console.debug('centerfolds or array message');
 			postMessage({ msgType: 'folderArray', folderArray: folderArray});
 			
 			endTime = new Date();
@@ -32,7 +32,7 @@ onmessage = function (event) {
 			break;
 		case 'createFoldersComplete':
 			console.debug('ReceivedFoldersComplete');
-			console.debug(folderArray);
+			// console.debug(folderArray);
 			for (let index = 0; index < folderArray.length; index++) {
 				workerMessageFolderImport(folderArray[0], folderArray[index], index);
 				
@@ -152,6 +152,8 @@ function importOSDirIterationCW(rootDirPath, test_bcount) {
 	// await Promise.all(p);
 }
 
+var gFileArrayOut = "";
+
 function workerMessageFolderImport(rootFolder, dirPath, folderIndex) {
 	var iterator = new OS.File.DirectoryIterator(dirPath);
 	var messageEntries = [];
@@ -161,7 +163,7 @@ function workerMessageFolderImport(rootFolder, dirPath, folderIndex) {
 	console.debug('Folder ' + dirPath);
 	// Iterate through the directory
 	let p = iterator.forEach(
-		function onEntry(entry) {
+		async function onEntry(entry) {
 
 			try {
 				if (!entry.isDir) {
@@ -170,6 +172,11 @@ function workerMessageFolderImport(rootFolder, dirPath, folderIndex) {
 					if (entry.name.endsWith(".eml")) {
 						fileArray = readFile1(entry.path);
 						fileArray = fixFile(fileArray, 1, entry.name);
+						
+						// readFile1(entry.path);
+						// fixFile2();
+						
+
 						try {
 
 							// console.debug('Adding ' + msgCount);
@@ -177,6 +184,7 @@ function workerMessageFolderImport(rootFolder, dirPath, folderIndex) {
 							// var message = {msgType: 'fileArray', fileArray: fileArray};
 							// var fileArray2 = new ArrayBuffer(50);
 							postMessage({ msgType: 'fileArray', fileArray: fileArray, folderIndex: folderIndex});
+							// postMessage({ msgType: 'fileArray', fileArray: gFileArray, folderIndex: folderIndex});
 							msgCount++;
 							// postMessage({msgType: 'fileArray', fileArray: fileArray}, fileArray.buffer);
 							// postMessage(fileArray, fileArray.buffer);
@@ -184,9 +192,12 @@ function workerMessageFolderImport(rootFolder, dirPath, folderIndex) {
 
 							// postMessage({msgType: 'fileArray', fileArray: "hello there this is text"});
 							// console.debug('Added ' + entry.path);
-							// if (msgCount % 10 === 0) {
+							// if (msgCount % 100 === 0) {
+							// 	await sleepA(20);
+							// }
+							
 							// 	IETwritestatus('Messages Imported: ' + msgCount);
-							delete fileArray;
+							// delete fileArray;
 							// }
 						} catch (e) {
 							console.debug('  AdMessageError ' + e);
@@ -214,14 +225,18 @@ function workerMessageFolderImport(rootFolder, dirPath, folderIndex) {
 
 function readFile1(filePath) {
 
-	let decoder = new TextDecoder();        // This decoder can be reused for several reads
-	let array = OS.File.read(filePath); // Read the complete file as an array
+	// let decoder = new TextDecoder();        // This decoder can be reused for several reads
+	// let array = OS.File.read(filePath); // Read the complete file as an array
+	let array = OS.File.read(filePath, {encoding: 'utf-8'}); // Read the complete file as an array
+	// gFileArray = OS.File.read(filePath, {encoding: 'utf-8'}); // Read the complete file as an array
 
 	// console.debug('file okay ');
 	// console.debug('Size ' + array.length);
 	// var ab = new ArrayBuffer(array.length);
 	// ab = decoder.decode(array);        // Convert this array to a text
-	return decoder.decode(array);        // Convert this array to a text
+	// return decoder.decode(array);        // Convert this array to a text
+	// return gFileArray.length;
+	return array;
 }
 
 function fixFile(data, msgFolder, file) {
@@ -234,6 +249,9 @@ function fixFile(data, msgFolder, file) {
 	data = data.replace(/\x00/g, "");
 	var now = new Date;
 	var nowString;
+
+	// var prologue = "From - " + nowString + "\n"; // The first line must begin with "From -", the following is not important
+	// return prologue + data;
 
 	try {
 		nowString = now.toString().match(/.+:\d\d/);
@@ -261,6 +279,7 @@ function fixFile(data, msgFolder, file) {
 
 	// Prologue needed to add the message to the folder
 	var prologue = "From - " + nowString + "\n"; // The first line must begin with "From -", the following is not important
+	
 	// If the message has no X-Mozilla-Status, we add them to it
 	// cleidigh - correct logic conversion
 	if (!data.includes("X-Mozilla-Status"))
@@ -290,5 +309,74 @@ function fixFile(data, msgFolder, file) {
 	return data;
 }
 
+function fixFile2() {
+	// Fix and transform data
+
+	// var msgFolder = GetSelectedMsgFolders()[0];
+	// msgFolder = msgFolder.QueryInterface(Ci.nsIMsgLocalMailFolder);
+
+	// strip off the null characters, that break totally import and display
+	gFileArray = gFileArray.replace(/\x00/g, "");
+	var now = new Date;
+	var nowString;
+
+	try {
+		nowString = now.toString().match(/.+:\d\d/);
+		nowString = nowString.toString().replace(/\d{4} /, "");
+		nowString = nowString + " " + now.getFullYear();
+	} catch (e) {
+		nowString = now.toString().replace(/GMT.+/, "");
+	}
+	var top = gFileArray.substring(0, 2000);
+
+	// Fix for crazy format returned by Hotmail view-source
+	if (top.match(/X-Message-Delivery:.+\r?\n\r?\n/) || top.match(/X-Message-Info:.+\r?\n\r?\n/))
+		gFileArray = gFileArray.replace(/(\r?\n\r?\n)/g, "\n");
+
+	// Fix for some not-compliant date headers
+	if (top.match(/Posted-Date\:/))
+		gFileArray = gFileArray.replace("Posted-Date:", "Date:");
+	if (top.match(/X-OriginalArrivalTime:.+\r?\n\r?\n/))
+		gFileArray = gFileArray.replace("X-OriginalArrivalTime:", "Date:");
+
+	// Some eml files begin with "From <something>"
+	// This causes that Thunderbird will not handle properly the message
+	// so in this case the first line is deleted
+	gFileArray = gFileArray.replace(/^From\s+.+\r?\n/, "");
+
+	// Prologue needed to add the message to the folder
+	var prologue = "From - " + nowString + "\n"; // The first line must begin with "From -", the following is not important
+	// If the message has no X-Mozilla-Status, we add them to it
+	// cleidigh - correct logic conversion
+	if (!gFileArray.includes("X-Mozilla-Status"))
+		prologue = prologue + "X-Mozilla-Status: 0000\nX-Mozilla-Status2: 00000000\n";
+	else {
+		// else if (IETprefs.getBoolPref("extensions.importexporttoolsng.reset_mozilla_status")) {
+		// Reset the X-Mozilla status
+		gFileArray = gFileArray.replace(/X-Mozilla-Status: \d{4}/, "X-Mozilla-Status: 0000");
+		gFileArray = gFileArray.replace(/X-Mozilla-Status2: \d{8}/, "X-Mozilla-Status2: 00000000");
+	}
+	// If the message has no X-Account-Key, we add it to it, taking it from the account selected
+	// cleidigh - correct logic conversion
+
+	// if (!gFileArray.includes("X-Account-Key")) {
+	// 	var myAccountManager = Cc["@mozilla.org/messenger/account-manager;1"]
+	// 		.getService(Ci.nsIMsgAccountManager);
+	// 	var myAccount = myAccountManager.FindAccountForServer(msgFolder.server);
+	// 	prologue = prologue + "X-Account-Key: " + myAccount.key + "\n";
+	// }
+
+	// fix this cleidigh
+	// gFileArray = escapeBeginningFrom(gFileArray, file);
+	gFileArray = gFileArray.replace(/\nFrom /g, "\n From ");
+	// Add the prologue to the EML text
+	gFileArray = prologue + gFileArray + "\n";
+
+	return gFileArray.length;
+}
+
+function sleepA(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 worker1('test');
