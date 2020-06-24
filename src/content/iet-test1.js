@@ -133,10 +133,10 @@ async function ImportEMLStructuredExt(type) {
 	IETwritestatus('Import ElapsedTime: ' + (stepTime - startTime) / 1000 + ' sec  : batchCount: ' + test_bcount);
 
 	console.debug('OS Folders: ' + dirs.length);
-	for (let index = 0; index < dirs.length; index++) {
-		const element = dirs[index];
-		console.debug(element.path.length + ' : ' + element.path);
-	}
+	// for (let index = 0; index < dirs.length; index++) {
+	// 	const element = dirs[index];
+	// 	console.debug(element.path.length + ' : ' + element.path);
+	// }
 
 	// return;
 	var test_cycles = Preferences.get("extensions.iet-ng-tests.test_cycles").value;
@@ -507,15 +507,14 @@ async function dirWalk2(dirPath) {
 }
 
 async function getImportFolderStructure(rootDirPath, recursive) {
-	let maxPathLen = 250 - rootMsgFolder.filePath.path.length;
+	let maxPathLen = 250 - rootMsgFolder.filePath.path.length - 5;
 	console.debug(rootMsgFolder.name + '  ' + rootMsgFolder.filePath.path.length + '  ' + maxPathLen);
 	let baseDirs = await importOSDirIteration(rootDirPath, recursive, maxPathLen);
 
 	baseDirs = baseDirs.reduce(function (result, d) {
 		// let dsubLen = d.path.split(rootDirPath + '\\')[1].split('\\').join('.sbd\\').length;
-		let dsub2 = d.path.split(rootDirPath + '\\')[1].split('\\');
 		let dsub = d.path.split(rootDirPath + '\\')[1].split('\\').join('.sbd\\');
-		console.debug(dsub + '  ' + dsub.length);
+		console.debug("L: " + dsub.length + " fl: " + (dsub.length + 5 + rootMsgFolder.filePath.path.length) + " - " + dsub + '(.msf)  ');
 		// console.debug(d.path + '  '+dsub2);
 		// console.debug(d.path + '  '+dsub);
 
@@ -529,7 +528,7 @@ async function getImportFolderStructure(rootDirPath, recursive) {
 	}, []);
 
 	baseDirs.unshift({ path: rootDirPath });
-	console.debug(baseDirs);
+	// console.debug(baseDirs);
 	return baseDirs;
 }
 
@@ -728,9 +727,14 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 					// console.debug(msgCount + '  : ' + entry.path);
 					if (entry.name.endsWith(".eml")) {
 
-						// fileArray = readFile1(entry.path);
-						// fileArray = fixFile(fileArray, msgFolder, entry.name);
-						readFile1(entry.path)
+						fileArray = await readFile1(entry.path);
+						fileArray = fixFile(fileArray, msgFolder, entry.name);
+						msgFolder.addMessage(fileArray);
+						if (msgCount % 10 === 0) {
+							IETwritestatus('Messages Imported: ' + msgCount);
+						}
+
+						/* readFile1(entry.path)
 							.then(f => {
 								f = fixFile(f, msgFolder, entry.name);
 								try {
@@ -743,7 +747,7 @@ async function messageFolderImport(rootFolder, msgFolder, dirPath) {
 									console.debug(entry.path);
 								}
 
-							});
+							}); */
 
 
 						// messageEntries.push(entry);
