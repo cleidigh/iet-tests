@@ -20,7 +20,7 @@
   xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   xmlns:html="http://www.w3.org/1999/xhtml" 
   id="iet-ng-status-dialog"
-  title="ImportExportNG Tests 0.1.13 - EML Message Import"
+  title="ImportExportNG Tests 0.1.14 - EML Message Import"
   type="child"> 
 
    <!-- The preferencesBindings helper script gets the preferences in the attached JavaScript options.js -->
@@ -41,7 +41,7 @@
       <hbox><label width="120px" control="test_cycls">Stage:</label>
         <label id="import_stage" ></label>
         </hbox>
-      
+      <spacer height="6px" />
       <hbox><label width="120px" control="test_cycls">Import Folder:</label>
       <label id="import_folder" ></label>
       </hbox>
@@ -55,9 +55,10 @@
         </hbox>
         <spacer height="10px" />
         <hbox>
-      <label width="120px">Import Setup:</label>
-        <html:textarea id="import_setup" rows="8" cols="100" style="white-space: pre; overflow-x: auto;"></html:textarea>
+      <label width="120px">Import Log:</label>
+        <html:textarea id="import_setup" rows="8" cols="60" style="white-space: pre; overflow-x: auto;"></html:textarea>
         </hbox>
+        <spacer height="10px" />
         <hbox>
       <label width="120px" control="test_updatecount">Imported Messages:</label>
         <label id="imported_mcount" width="120px" ></label>

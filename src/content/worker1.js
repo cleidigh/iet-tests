@@ -2,8 +2,12 @@
 // const { OS } = require("resource://gre/modules/osfile.jsm");
 importScripts("resource://gre/modules/osfile.jsm");
 
+var rootDirPath;
+var rootMsgFolderPath;
+var sourceMsgCount;
 var msgCount = 0;
 var folderArray = [];
+var skippedFolderArray = [];
 var endTime, startTime;
 var gFileArray = "";
 
@@ -12,21 +16,23 @@ function worker1(dirPath) {
 }
 
 onmessage = function (event) {
-	console.debug(event);
 	switch (event.data.msgType) {
 		case 'startImport':
+			sourceMsgCount = 0;
 			msgCount = 0;
 
-			let dirPath = event.data.d;
-			console.debug('started worker import:  walkD ' + dirPath);
+			rootDirPath = event.data.d;
+			rootMsgFolderPath = event.data.rootMsgFolderPath;
+			console.debug('started worker import:  walkD ' + rootDirPath);
 			startTime = new Date();
 			console.debug('StartTime: ' + startTime.toISOString());
 
-			folderArray = dw(dirPath);
-			folderArray.unshift(dirPath);
+			folderArray = dw(rootDirPath);
+			checkFolderLen();
+			folderArray.unshift(rootDirPath);
 			// let d = importOSDirIterationCW(dirPath, event.data.bc);
-			postMessage({ msgType: 'folderArray', folderArray: folderArray});
-			
+			postMessage({ msgType: 'folderArray', folderArray: folderArray, skippedFolderArray: skippedFolderArray, sourceMsgCount: sourceMsgCount });
+
 			endTime = new Date();
 			console.debug('ElapsedTime: ' + (endTime - startTime) / 1000 + '  : ' + folderArray.length);
 			break;
@@ -35,13 +41,13 @@ onmessage = function (event) {
 			// console.debug(folderArray);
 			for (let index = 0; index < folderArray.length; index++) {
 				workerMessageFolderImport(folderArray[0], folderArray[index], index);
-				
+
 			}
 
 			endTime = new Date();
 			console.debug('S ElapsedTime: ' + (endTime - startTime) / 1000 + '  : ' + msgCount);
-		
-			postMessage({ msgType: 'messagesComplete'});
+
+			postMessage({ msgType: 'messagesComplete' });
 			break;
 
 		default:
@@ -57,11 +63,7 @@ function dw(d) {
 	var subdirs = [];
 	var iterator = new OS.File.DirectoryIterator(d);
 
-
-	// console.debug('Walk  '+d);
 	try {
-
-		// for (let entry in iterator) {
 		iterator.forEach(entry => {
 			// console.debug(entry);
 			if (entry.isDir) {
@@ -70,16 +72,17 @@ function dw(d) {
 				// entry is a directory
 				let dirs = dw(entry.path);
 				subdirs = subdirs.concat(dirs);
-			} else {
-				// subdirs.push(entry.path);
+			} else if (entry.name.endsWith('.eml')) {
+				sourceMsgCount++;
 			}
+			// subdirs.push(entry.path);
 		});
-		// return [entry for (entry in iterator) if (entry.isDir) ];
+	// return [entry for (entry in iterator) if (entry.isDir) ];
 
-	} finally {
-		iterator.close();
-	}
-	return subdirs;
+} finally {
+	iterator.close();
+}
+return subdirs;
 
 }
 
@@ -112,6 +115,25 @@ function dw2(d) {
 		iterator.close();
 	}
 	return subdirs;
+
+}
+
+function checkFolderLen() {
+	let maxPathLen = 250 - rootMsgFolderPath.length - 5;
+	skippedFolderArray = [];
+
+	folderArray = folderArray.reduce(function (result, d) {
+		let dsub = d.split(rootDirPath + '\\')[1].split('\\').join('.sbd\\');
+		// console.debug("L: " + dsub.length + " fl: " + (dsub.length + 5 + rootMsgFolderPath.length) + " - " + dsub + '(.msf)  ');
+
+		if (dsub.length < maxPathLen) {
+			result.push(d);
+		} else {
+			console.debug('Folder Path Too Long: ' + d);
+			skippedFolderArray.push(d);
+		}
+		return result;
+	}, []);
 
 }
 
@@ -159,8 +181,7 @@ function workerMessageFolderImport(rootFolder, dirPath, folderIndex) {
 	var messageEntries = [];
 	var fileArray = "";
 
-
-	console.debug('Folder ' + dirPath);
+	// console.debug('Folder ' + dirPath);
 	// Iterate through the directory
 	let p = iterator.forEach(
 		async function onEntry(entry) {
@@ -172,10 +193,10 @@ function workerMessageFolderImport(rootFolder, dirPath, folderIndex) {
 					if (entry.name.endsWith(".eml")) {
 						fileArray = readFile1(entry.path);
 						fileArray = fixFile(fileArray, 1, entry.name);
-						
+
 						// readFile1(entry.path);
 						// fixFile2();
-						
+
 
 						try {
 
@@ -183,7 +204,7 @@ function workerMessageFolderImport(rootFolder, dirPath, folderIndex) {
 							// msgFolder.addMessage(fileArray);
 							// var message = {msgType: 'fileArray', fileArray: fileArray};
 							// var fileArray2 = new ArrayBuffer(50);
-							postMessage({ msgType: 'fileArray', fileArray: fileArray, folderIndex: folderIndex});
+							postMessage({ msgType: 'fileArray', fileArray: fileArray, folderIndex: folderIndex });
 							// postMessage({ msgType: 'fileArray', fileArray: gFileArray, folderIndex: folderIndex});
 							msgCount++;
 							// postMessage({msgType: 'fileArray', fileArray: fileArray}, fileArray.buffer);
@@ -192,10 +213,11 @@ function workerMessageFolderImport(rootFolder, dirPath, folderIndex) {
 
 							// postMessage({msgType: 'fileArray', fileArray: "hello there this is text"});
 							// console.debug('Added ' + entry.path);
-							// if (msgCount % 100 === 0) {
+							if (msgCount % 10 === 0) {
 							// 	await sleepA(20);
-							// }
-							
+								delete fileArray;
+							}
+
 							// 	IETwritestatus('Messages Imported: ' + msgCount);
 							// delete fileArray;
 							// }
@@ -227,7 +249,7 @@ function readFile1(filePath) {
 
 	// let decoder = new TextDecoder();        // This decoder can be reused for several reads
 	// let array = OS.File.read(filePath); // Read the complete file as an array
-	let array = OS.File.read(filePath, {encoding: 'utf-8'}); // Read the complete file as an array
+	let array = OS.File.read(filePath, { encoding: 'utf-8' }); // Read the complete file as an array
 	// gFileArray = OS.File.read(filePath, {encoding: 'utf-8'}); // Read the complete file as an array
 
 	// console.debug('file okay ');
@@ -279,7 +301,7 @@ function fixFile(data, msgFolder, file) {
 
 	// Prologue needed to add the message to the folder
 	var prologue = "From - " + nowString + "\n"; // The first line must begin with "From -", the following is not important
-	
+
 	// If the message has no X-Mozilla-Status, we add them to it
 	// cleidigh - correct logic conversion
 	if (!data.includes("X-Mozilla-Status"))
